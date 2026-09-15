@@ -26,6 +26,8 @@ Use the planned in-process domain-event dispatcher with a transactional outbox f
 
 ## Related stack choices retained
 
+Project naming: **ComplyOS** is the user-approved product name. The root npm package is `complyos`; workspace packages use the `@complyos` scope (for example, `@complyos/web`).
+
 - Prisma with local PostgreSQL for persistence.
 - JWT access tokens, rotating refresh sessions and Argon2 password hashing.
 - class-validator DTO validation, OpenAPI documentation and Jest backend tests.

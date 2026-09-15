@@ -87,7 +87,7 @@ Roadmap reference: A01–A10.
 | --- | --- | --- | --- | --- |
 | [x] | T0001 | Record the Express-versus-Nest decision in one architecture note. | Completed: [ADR 0001](architecture/0001-backend-framework.md) selects Express/TypeScript, identifies the conflicting NestJS requirements and documents implementation equivalents. Documentation reviewed against the local plan; no runtime change. | Start |
 | [x] | T0002 | Create the root npm workspace manifest. | Completed: root package.json declares apps/* and packages/*; package-lock.json root metadata matches. Verified with npm pkg get workspaces and Node assertions for workspace/dependency consistency and private status. Existing source/scripts/dependencies preserved; child packages begin at T0003. | T0001 |
-| [ ] | T0003 | Create apps/web/package.json with React, TypeScript and Vite. | The web workspace exposes a dev command. | T0002 |
+| [x] | T0003 | Create apps/web/package.json with React, TypeScript and Vite. | Completed: private @complyos/web package with React 18, TypeScript, Vite 8.3.0 and loopback dev/preview commands; dependencies installed and root lockfile updated. Verified npm workspace discovery, npm ls, dev -- --version and manifest/lockfile consistency. Node engine follows https://vite.dev/guide/. Entry HTML/React root and application build verification belong to T0004. | T0002 |
 | [ ] | T0004 | Add the Vite entry HTML and React root. | A placeholder renders at localhost. | T0003 |
 | [ ] | T0005 | Copy the existing Tailwind theme and Shadcn configuration into apps/web. | A sample existing button keeps its current styling. | T0004 |
 | [ ] | T0006 | Add React Router v6 and an empty authenticated shell route. | A direct URL reload resolves through Vite. | T0005 |
