@@ -12,13 +12,23 @@
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.1.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.446.0",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "react-router-dom": "^6.30.6",
+    "tailwind-merge": "^2.5.2"
   },
   "devDependencies": {
     "@types/node": "^22.18.0",
     "@types/react": "18.2.22",
     "@types/react-dom": "18.2.7",
+    "autoprefixer": "10.4.15",
+    "postcss": "8.4.30",
+    "tailwindcss": "3.3.3",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "5.2.2",
     "vite": "8.3.0"
   }
