@@ -12,19 +12,35 @@ const env = { ...read('.env.test'), ...process.env };
 const app = { ...read('apps/api/.env'), ...process.env };
 let db, producer, consumer, scope;
 let failed = false;
+let stage = 'configuration guard';
+async function expectConstraint(client, savepoint, work, code) {
+  await client.query(`SAVEPOINT ${savepoint}`);
+  try {
+    await work();
+    assert.fail(`Expected PostgreSQL constraint ${code}.`);
+  } catch (error) {
+    assert.equal(error?.code, code);
+  } finally {
+    await client.query(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+  }
+}
 try {
   if (!env.TEST_DATABASE_URL || !env.TEST_REDIS_URL) throw new Error('Explicit TEST_DATABASE_URL and TEST_REDIS_URL are required. No application URL fallback is allowed.');
   assertTestResources(env.TEST_DATABASE_URL, env.TEST_REDIS_URL, { databaseUrl: app.DATABASE_URL, redisUrl: app.REDIS_URL });
   // Guard precedes all network access and schema writes.
+  stage = 'database migration';
   scope = 'test-' + randomUUID();
   db = createDatabase(env.TEST_DATABASE_URL);
   await migrate(db);
+  stage = 'queue setup';
   producer = makeQueue(env.TEST_REDIS_URL, scope);
   const store = jobStore(db, producer.queue, scope);
+  stage = 'job submission';
   const [first, duplicate] = await Promise.all([store.submit({ label: 'Retry then succeed', failUntil: 2 }, 'retry-case'), store.submit({ label: 'Retry then succeed', failUntil: 2 }, 'retry-case')]);
   assert.equal(first.id, duplicate.id);
   await assert.rejects(() => store.submit({ label: 'Different request' }, 'retry-case'), IdempotencyConflict);
   const permanent = await store.submit({ label: 'Bounded failure', failUntil: 3 }, 'failure-case');
+  stage = 'worker processing';
   consumer = makeWorker(db, env.TEST_REDIS_URL, scope, () => { failed = true; });
   const until = Date.now() + 45000;
   while (Date.now() < until) {
@@ -45,9 +61,40 @@ try {
   assert.equal(await effects(success.id), 1);
   assert.equal(await effects(failure.id), 0);
   assert.equal(failed, false);
-  console.log('PASS live integration: retries, final failure, deduplication and one durable effect.');
-} catch {
-  console.error('Live integration failed or refused. Check explicit test URLs, isolation, connectivity and migration permissions. Connection details are withheld.');
+
+  stage = 'identity and access constraints';
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const ids = Object.fromEntries(['user', 'organizationA', 'organizationB', 'membershipA', 'membershipB', 'roleA', 'roleB', 'permissionRead', 'permissionWrite'].map(key => [key, randomUUID()]));
+    const user = await client.query('INSERT INTO "User" ("id", "email") VALUES ($1, $2) RETURNING "normalizedEmail"', [ids.user, '  Owner@Example.COM  ']);
+    assert.equal(user.rows[0].normalizedEmail, 'owner@example.com');
+    await expectConstraint(client, 'duplicate_email', () => client.query('INSERT INTO "User" ("id", "email") VALUES ($1, $2)', [randomUUID(), 'owner@example.com']), '23505');
+
+    await client.query('INSERT INTO "Organization" ("id", "name") VALUES ($1, $2), ($3, $4)', [ids.organizationA, 'Tenant A', ids.organizationB, 'Tenant B']);
+    await client.query('INSERT INTO "OrganizationMembership" ("id", "organizationId", "userId") VALUES ($1, $2, $3), ($4, $5, $3)', [ids.membershipA, ids.organizationA, ids.user, ids.membershipB, ids.organizationB]);
+    await expectConstraint(client, 'duplicate_membership', () => client.query('INSERT INTO "OrganizationMembership" ("id", "organizationId", "userId") VALUES ($1, $2, $3)', [randomUUID(), ids.organizationA, ids.user]), '23505');
+
+    await client.query('INSERT INTO "Role" ("id", "organizationId", "name") VALUES ($1, $2, $3), ($4, $5, $6)', [ids.roleA, ids.organizationA, 'Manager', ids.roleB, ids.organizationB, 'Auditor']);
+    await client.query('INSERT INTO "Permission" ("id", "key") VALUES ($1, $2), ($3, $4)', [ids.permissionRead, 'controls:read', ids.permissionWrite, 'controls:write']);
+    await client.query('INSERT INTO "RolePermission" ("roleId", "permissionId") VALUES ($1, $2), ($1, $3), ($4, $2)', [ids.roleA, ids.permissionRead, ids.permissionWrite, ids.roleB]);
+    await client.query('INSERT INTO "MembershipRole" ("membershipId", "roleId", "organizationId") VALUES ($1, $2, $3), ($4, $5, $6)', [ids.membershipA, ids.roleA, ids.organizationA, ids.membershipB, ids.roleB, ids.organizationB]);
+    await expectConstraint(client, 'cross_tenant_role', () => client.query('INSERT INTO "MembershipRole" ("membershipId", "roleId", "organizationId") VALUES ($1, $2, $3)', [ids.membershipA, ids.roleB, ids.organizationA]), '23503');
+
+    const grants = await client.query('SELECT "organizationId", "roleId" FROM "MembershipRole" WHERE "membershipId" IN ($1, $2)', [ids.membershipA, ids.membershipB]);
+    assert.equal(grants.rowCount, 2);
+    await client.query('ROLLBACK');
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw error;
+  } finally {
+    client.release();
+  }
+  console.log('PASS live integration: jobs plus identity normalization, tenant memberships, permissions and tenant-safe role grants.');
+} catch (error) {
+  const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : 'NO_CODE';
+  const detail = stage === 'configuration guard' && error instanceof Error ? ` ${error.message}` : '';
+  console.error(`Live integration failed during ${stage} (${code}).${detail} Check isolation, connectivity and permissions. Connection details are withheld.`);
   process.exitCode = 1;
 } finally {
   try {

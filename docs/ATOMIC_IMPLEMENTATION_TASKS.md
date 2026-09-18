@@ -113,9 +113,9 @@ Roadmap reference: A01–A10.
 | [x] | T0026 | Add Zustand for transient UI preferences only. | Completed: the store contains only sidebar expansion preferences; server records remain in TanStack Query. Build/typecheck pass. | T0025 |
 | [x] | T0027 | Add the frontend loading/error boundary component. | Completed: shared async state renders loading/error content and a working query retry action. Desktop/mobile browser tests pass. | T0026 |
 | [x] | T0028 | Add local Redis configuration and connectivity check. | Completed: Redis/rediss URL validation, bounded connection behavior and readiness diagnostics are shared by API and worker; unavailable Redis returns a readable non-ready result. API tests pass. | T0027 |
-| [ ] | T0029 | Create the worker workspace and one BullMQ queue. | Implementation complete: worker workspace, queue producer/consumer and health processor build and typecheck. Live acceptance is pending an isolated `TEST_REDIS_URL`; none is configured. | T0028 |
-| [ ] | T0030 | Add job attempt/status persistence in JobRecord. | Implementation complete: additive SQL, transactional job store and worker transitions persist attempts/final state. Unit tests pass; live PostgreSQL/Redis acceptance is pending isolated test URLs. | T0029 |
-| [ ] | T0031 | Add bounded retry/backoff and job deduplication. | Implementation complete: three-attempt 1s/2s backoff, request-key conflict protection and transactionally unique durable effects are covered by unit tests. Live integration test exists but is pending isolated test URLs. | T0030 |
+| [x] | T0029 | Create the worker workspace and one BullMQ queue. | Completed: worker workspace, queue producer/consumer and health processor build/typecheck; isolated live Redis integration enqueued and processed real jobs successfully. | T0028 |
+| [x] | T0030 | Add job attempt/status persistence in JobRecord. | Completed: additive SQL, transactional job store and worker transitions persist attempts/final state. Live integration verified three attempts, eventual success and bounded final failure in the isolated database. | T0029 |
+| [x] | T0031 | Add bounded retry/backoff and job deduplication. | Completed: three-attempt 1s/2s backoff, request-key conflict protection and transactionally unique durable effects pass unit and live integration tests; redelivery produced exactly one effect. | T0030 |
 | [x] | T0032 | Add Vitest configuration for web. | Completed: Vitest/jsdom setup runs three behavior tests successfully. | T0031 |
 | [x] | T0033 | Add Jest configuration for API. | Completed: ESM Jest setup runs 20 API/request/job tests successfully. | T0032 |
 | [x] | T0034 | Add a separate test-database environment guard. | Completed: integration runner requires explicit `TEST_*` URLs, a database named `complyos_test`, and resources distinct from application configuration before network or schema access. Guard tests pass. | T0033 |
@@ -129,11 +129,11 @@ Roadmap reference: B01–B06.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0038 | Add the User model and normalized unique email field. | Case variants cannot create duplicate identities. | T0037 |
-| [ ] | T0039 | Add the Organization model. | Organizations receive independent IDs. | T0038 |
-| [ ] | T0040 | Add OrganizationMembership with status and tenant-safe uniqueness. | One user can join two organizations once each. | T0039 |
-| [ ] | T0041 | Add Role, Permission and RolePermission models. | Roles can share independent permission records. | T0040 |
-| [ ] | T0042 | Add membership-to-role grants. | The same user can have different roles in different organizations. | T0041 |
+| [x] | T0038 | Add the User model and normalized unique email field. | Completed: PostgreSQL generates `normalizedEmail` with trimmed lowercase semantics and uniquely indexes it. Live integration proved a case/whitespace variant cannot create a second identity. | T0037 |
+| [x] | T0039 | Add the Organization model. | Completed: organizations have independent UUID primary keys, validated nonblank names and timestamps. Two organizations were created independently in the rolled-back live test. | T0038 |
+| [x] | T0040 | Add OrganizationMembership with status and tenant-safe uniqueness. | Completed: membership references user/organization, constrains lifecycle status, uniquely keys each organization/user pair and exposes a tenant-composite key. Live integration proved one user can join two organizations but cannot join either twice. | T0039 |
+| [x] | T0041 | Add Role, Permission and RolePermission models. | Completed: roles are organization-scoped, permission keys are reusable global capabilities, and the many-to-many join has cascade-safe foreign keys. Live integration assigned one permission to roles in both tenants. | T0040 |
+| [x] | T0042 | Add membership-to-role grants. | Completed: `MembershipRole` grants use composite membership/role tenant foreign keys. Live integration granted different roles to one user's two memberships and rejected a cross-tenant role grant at the database boundary. | T0041 |
 | [ ] | T0043 | Seed the ten named roles and their permission matrix. | Every role from the prompt has explicit allowed actions. | T0042 |
 | [ ] | T0044 | Add Argon2 password hash/verify helpers. | Stored credentials are hashes and invalid passwords fail verification. | T0043 |
 | [ ] | T0045 | Add POST /auth/register. | A valid registration creates the identity and initial organization transactionally. | T0044 |
