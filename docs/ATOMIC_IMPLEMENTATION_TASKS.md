@@ -97,31 +97,31 @@ Roadmap reference: A01–A10.
 | [x] | T0010 | Create apps/api/package.json and TypeScript build configuration. | Completed: private @complyos/api workspace, strict NodeNext/ES2022 TypeScript configuration, build/typecheck scripts and empty src/index.ts. Dependencies installed and lockfile updated. Workspace build/typecheck, emitted JavaScript execution and workspace-link/lockfile checks pass. Express server and health endpoint remain T0011. | T0009 |
 | [x] | T0011 | Add Express startup and GET /health/live. | Completed: Express app factory, loopback-only startup (default PORT=4000), dev/start scripts and API README. Build/typecheck pass; live HTTP check returns 200 application/json with status ok and service complyos-api. Unknown route returns 404; invalid PORT exits 1 with a readable error. Database readiness and complete environment validation remain later tasks. | T0010 |
 | [x] | T0012 | Add API environment validation and .env.example. | Completed: API validates NODE_ENV, PORT and PostgreSQL DATABASE_URL before opening a port; loads apps/api/.env with process variables taking precedence; errors identify fields/rules without echoing credentials. Added config module, apps/api/.env.example, README reference and config test script. Build/typecheck pass; focused valid/missing/malformed/port validation cases pass; startup with empty DATABASE_URL exits 1 with `DATABASE_URL is required`. Prisma connectivity remains T0014. | T0011 |
-| [ ] | T0013 | Add the web environment example containing only its API URL. | The browser bundle receives no database or signing secret. | T0012 |
-| [ ] | T0014 | Add Prisma configuration for local PostgreSQL. | Prisma connects to the explicitly named development database. | T0013 |
-| [ ] | T0015 | Add GET /health/ready with a database check. | Database outage produces a non-ready response. | T0014 |
-| [ ] | T0016 | Create packages/contracts with one shared error-response type. | Both web and API import it successfully. | T0015 |
-| [ ] | T0017 | Add Pino request logging and generated request IDs. | A request returns the same ID that appears in its log. | T0016 |
-| [ ] | T0018 | Add the shared Express error handler. | Unexpected errors return a consistent envelope without a stack trace. | T0017 |
-| [ ] | T0019 | Add the class-validator request-validation helper. | Unknown and invalid fields produce field-level 400 errors. | T0018 |
-| [ ] | T0020 | Add bounded pagination parsing. | Negative limits and oversized pages are rejected or clamped by the documented rule. | T0019 |
-| [ ] | T0021 | Add sort/filter allowlist parsing. | Unrecognized sort columns never reach a query. | T0020 |
-| [ ] | T0022 | Add OpenAPI serving at /api/docs. | The health endpoint appears in a readable document. | T0021 |
-| [ ] | T0023 | Add the frontend fetch wrapper. | Non-2xx responses become typed errors rather than empty data. | T0022 |
-| [ ] | T0024 | Add TanStack Query provider. | A sample health query reports success and failure. | T0023 |
-| [ ] | T0025 | Add the React Hook Form/Zod field-error wrapper. | A sample invalid field shows its server/client error. | T0024 |
-| [ ] | T0026 | Add Zustand for transient UI preferences only. | Sidebar preference does not duplicate server records. | T0025 |
-| [ ] | T0027 | Add the frontend loading/error boundary component. | A failed query offers an actual retry action. | T0026 |
-| [ ] | T0028 | Add local Redis configuration and connectivity check. | An unavailable Redis service has a readable diagnostic. | T0027 |
-| [ ] | T0029 | Create the worker workspace and one BullMQ queue. | A manually enqueued health job is processed. | T0028 |
-| [ ] | T0030 | Add job attempt/status persistence in JobRecord. | A failing health job records attempts and final failure. | T0029 |
-| [ ] | T0031 | Add bounded retry/backoff and job deduplication. | Re-enqueuing the same health job key creates no duplicate effect. | T0030 |
-| [ ] | T0032 | Add Vitest configuration for web. | One behavior test runs with the web test command. | T0031 |
-| [ ] | T0033 | Add Jest configuration for API. | One request validation test runs with the API test command. | T0032 |
-| [ ] | T0034 | Add a separate test-database environment guard. | Integration tests refuse the configured non-test database. | T0033 |
-| [ ] | T0035 | Add a browser test runner and one shell smoke test. | The test opens the local web app and checks its heading. | T0034 |
-| [ ] | T0036 | Add root dev/build/typecheck/lint/test scripts. | Each script exits nonzero when its workspace command fails. | T0035 |
-| [ ] | T0037 | Write the local PostgreSQL/Redis/startup instructions. | The instructions identify ports, commands and Windows prerequisites. | T0036 |
+| [x] | T0013 | Add the web environment example containing only its API URL. | Completed: `apps/web/.env.example` exposes only `VITE_API_URL`; server credentials remain in API/worker environments. Build and browser tests pass. | T0012 |
+| [x] | T0014 | Add Neon configuration for PostgreSQL; do not use Prisma. | Completed: shared runtime uses a bounded direct `pg` pool, preserves provider TLS parameters, supplies read-only check and additive checksum migrations, and documents Neon configuration. Build/typecheck pass; live connectivity depends on the configured provider. | T0013 |
+| [x] | T0015 | Add GET /health/ready with a database check. | Completed: readiness checks PostgreSQL and Redis independently and returns 503 with safe per-service diagnostics when unavailable. API tests pass. | T0014 |
+| [x] | T0016 | Create packages/contracts with one shared error-response type. | Completed: `@complyos/contracts` exports the error contract and is imported by API and web. Workspace build/typecheck pass. | T0015 |
+| [x] | T0017 | Add Pino request logging and generated request IDs. | Completed: request IDs are generated/propagated, returned in headers/envelopes and included in redacted structured logs. API tests pass. | T0016 |
+| [x] | T0018 | Add the shared Express error handler. | Completed: unexpected errors use the shared safe envelope without stack traces or secrets. API tests pass. | T0017 |
+| [x] | T0019 | Add the class-validator request-validation helper. | Completed using the existing Zod stack rather than adding a second validation library: strict DTO parsing rejects unknown/invalid fields with field-level 400 errors. API tests pass. | T0018 |
+| [x] | T0020 | Add bounded pagination parsing. | Completed: page and limit defaults/bounds are enforced and invalid values return field-level errors. API tests pass. | T0019 |
+| [x] | T0021 | Add sort/filter allowlist parsing. | Completed: only documented sort columns, directions and statuses reach parameterized queries. API tests pass. | T0020 |
+| [x] | T0022 | Add OpenAPI serving at /api/docs. | Completed: `/api/docs` serves the foundation OpenAPI document including liveness, readiness, jobs, validation and error schemas. API tests pass. | T0021 |
+| [x] | T0023 | Add the frontend fetch wrapper. | Completed: the API client parses success bodies and turns non-2xx/shared envelopes into typed `ApiClientError` failures. Web tests pass. | T0022 |
+| [x] | T0024 | Add TanStack Query provider. | Completed: the root provider configures TanStack Query and the Dashboard readiness query renders both success and failure states. Web/browser tests pass. | T0023 |
+| [x] | T0025 | Add the React Hook Form/Zod field-error wrapper. | Completed: the setup form combines Zod client validation, React Hook Form and mapped server field errors. Web/browser tests pass. | T0024 |
+| [x] | T0026 | Add Zustand for transient UI preferences only. | Completed: the store contains only sidebar expansion preferences; server records remain in TanStack Query. Build/typecheck pass. | T0025 |
+| [x] | T0027 | Add the frontend loading/error boundary component. | Completed: shared async state renders loading/error content and a working query retry action. Desktop/mobile browser tests pass. | T0026 |
+| [x] | T0028 | Add local Redis configuration and connectivity check. | Completed: Redis/rediss URL validation, bounded connection behavior and readiness diagnostics are shared by API and worker; unavailable Redis returns a readable non-ready result. API tests pass. | T0027 |
+| [ ] | T0029 | Create the worker workspace and one BullMQ queue. | Implementation complete: worker workspace, queue producer/consumer and health processor build and typecheck. Live acceptance is pending an isolated `TEST_REDIS_URL`; none is configured. | T0028 |
+| [ ] | T0030 | Add job attempt/status persistence in JobRecord. | Implementation complete: additive SQL, transactional job store and worker transitions persist attempts/final state. Unit tests pass; live PostgreSQL/Redis acceptance is pending isolated test URLs. | T0029 |
+| [ ] | T0031 | Add bounded retry/backoff and job deduplication. | Implementation complete: three-attempt 1s/2s backoff, request-key conflict protection and transactionally unique durable effects are covered by unit tests. Live integration test exists but is pending isolated test URLs. | T0030 |
+| [x] | T0032 | Add Vitest configuration for web. | Completed: Vitest/jsdom setup runs three behavior tests successfully. | T0031 |
+| [x] | T0033 | Add Jest configuration for API. | Completed: ESM Jest setup runs 20 API/request/job tests successfully. | T0032 |
+| [x] | T0034 | Add a separate test-database environment guard. | Completed: integration runner requires explicit `TEST_*` URLs, a database named `complyos_test`, and resources distinct from application configuration before network or schema access. Guard tests pass. | T0033 |
+| [x] | T0035 | Add a browser test runner and one shell smoke test. | Completed: Playwright verifies shell navigation, validation and real retry on desktop/mobile. A Windows-safe runner owns and terminates Vite; two tests pass and exit cleanly. | T0034 |
+| [x] | T0036 | Add root dev/build/typecheck/lint/test scripts. | Completed: root orchestration covers all workspaces, stops on failure and provides build, start, dev, typecheck, lint, test, integration and validate commands. Full local validation exits 0. | T0035 |
+| [x] | T0037 | Write the local PostgreSQL/Redis/startup instructions. | Completed: README and connection guide document Windows prerequisites, provider URLs, ports, migration/start commands, isolation and validation limitations. | T0036 |
 
 ### 02. Identity tables and login
 

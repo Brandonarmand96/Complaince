@@ -1,0 +1,21 @@
+{
+  "name": "@complyos/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint --no-eslintrc --config ../../.eslintrc.foundation.cjs src --ext .ts"
+  },
+  "dependencies": {
+    "@complyos/runtime": "0.1.0"
+  },
+  "devDependencies": {
+    "typescript": "5.2.2",
+    "tsx": "^4.23.13",
+    "@types/node": "^22.18.0"
+  }
+}

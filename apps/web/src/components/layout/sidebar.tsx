@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
+import { useUiStore } from '@/lib/ui-store';
 import {
   LayoutDashboard,
   ShieldCheck,
@@ -82,16 +83,8 @@ export const navSections: NavSection[] = [
 export function Sidebar() {
   const { pathname } = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
-
-  const toggleSection = (title: string) => {
-    setCollapsedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(title)) next.delete(title);
-      else next.add(title);
-      return next;
-    });
-  };
+  const collapsedSections = useUiStore(state => state.collapsedSections);
+  const toggleSection = useUiStore(state => state.toggleSection);
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);

@@ -12,15 +12,26 @@
     "start": "node dist/index.js",
     "build": "tsc --project tsconfig.json",
     "typecheck": "tsc --project tsconfig.json --noEmit",
-    "test:config": "npm run build && node --test tests/environment.test.mjs"
+    "lint": "eslint --no-eslintrc --config ../../.eslintrc.foundation.cjs src --ext .ts",
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js --config jest.config.mjs --runInBand"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^22.18.0",
     "tsx": "^4.23.13",
-    "typescript": "5.2.2"
+    "typescript": "5.2.2",
+    "@types/swagger-ui-express": "^4.1.8",
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4",
+    "pino": "^9.9.0"
   },
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "@complyos/contracts": "0.1.0",
+    "@complyos/runtime": "0.1.0",
+    "class-validator": "^0.14.2",
+    "class-transformer": "^0.5.1",
+    "reflect-metadata": "^0.2.2",
+    "swagger-ui-express": "^5.0.1"
   }
 }
