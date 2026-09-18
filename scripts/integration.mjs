@@ -1,16 +1,18 @@
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import { parseEnv } from 'node:util';
 import { setTimeout as delay } from 'node:timers/promises';
 import { assertTestResources } from '@complyos/runtime/testing';
 import { createDatabase } from '@complyos/runtime/database';
 import { jobStore, makeQueue, makeWorker, processHealthJob, IdempotencyConflict } from '@complyos/runtime/jobs';
+import { authStore, InvalidCredentials, InvalidRefreshToken, verifyAccessToken } from '@complyos/runtime/auth';
+import { BUILT_IN_ROLES, ROLE_PERMISSION_MATRIX } from '@complyos/runtime/roles';
 import { migrate } from './migrations.mjs';
 const read = path => existsSync(path) ? parseEnv(readFileSync(path, 'utf8')) : {};
 const env = { ...read('.env.test'), ...process.env };
 const app = { ...read('apps/api/.env'), ...process.env };
-let db, producer, consumer, scope;
+let db, producer, consumer, scope, authUserId, authOrganizationId;
 let failed = false;
 let stage = 'configuration guard';
 async function expectConstraint(client, savepoint, work, code) {
@@ -90,7 +92,38 @@ try {
   } finally {
     client.release();
   }
-  console.log('PASS live integration: jobs plus identity normalization, tenant memberships, permissions and tenant-safe role grants.');
+
+  stage = 'authentication flows';
+  const authConfig = { accessSecret: 'integration-secret-with-at-least-32-characters', issuer: 'complyos-integration', audience: 'complyos-test', accessTtlSeconds: 300, refreshTtlSeconds: 3600 };
+  const auth = authStore(db, authConfig);
+  const email = `owner-${randomUUID()}@example.com`;
+  const password = 'correct horse battery staple';
+  const registration = await auth.register({ email, password, displayName: 'Test Owner', organizationName: 'Isolated Auth Tenant' });
+  authUserId = registration.user.id;
+  const membership = await db.query('SELECT "organizationId" FROM "OrganizationMembership" WHERE "userId" = $1', [authUserId]);
+  authOrganizationId = membership.rows[0].organizationId;
+  const storedUser = await db.query('SELECT "passwordHash" FROM "User" WHERE "id" = $1', [authUserId]);
+  assert.match(storedUser.rows[0].passwordHash, /^\$argon2id\$/);
+  assert.equal(storedUser.rows[0].passwordHash.includes(password), false);
+
+  const seeded = await db.query('SELECT r."name", array_agg(p."key" ORDER BY p."key") AS permissions FROM "Role" r LEFT JOIN "RolePermission" rp ON rp."roleId" = r."id" LEFT JOIN "Permission" p ON p."id" = rp."permissionId" WHERE r."organizationId" = $1 GROUP BY r."id", r."name"', [authOrganizationId]);
+  assert.deepEqual(seeded.rows.map(row => row.name).sort(), [...BUILT_IN_ROLES].sort());
+  for (const row of seeded.rows) assert.deepEqual(row.permissions.filter(Boolean), [...ROLE_PERMISSION_MATRIX[row.name]].sort());
+
+  await assert.rejects(() => auth.login({ email: 'missing@example.com', password }), InvalidCredentials);
+  await assert.rejects(() => auth.login({ email, password: 'wrong password' }), InvalidCredentials);
+  const login = await auth.login({ email: email.toUpperCase(), password });
+  assert.equal((await verifyAccessToken(authConfig, login.accessToken)).userId, authUserId);
+  const storedTokens = await db.query('SELECT "tokenHash" FROM "RefreshToken" t JOIN "RefreshTokenFamily" f ON f."id" = t."familyId" WHERE f."userId" = $1', [authUserId]);
+  assert.ok(storedTokens.rows.every(row => /^[a-f0-9]{64}$/.test(row.tokenHash) && row.tokenHash !== login.refreshToken));
+  const rotated = await auth.refresh(login.refreshToken);
+  assert.notEqual(rotated.refreshToken, login.refreshToken);
+  await assert.rejects(() => auth.refresh(login.refreshToken), InvalidRefreshToken);
+  await assert.rejects(() => auth.refresh(rotated.refreshToken), InvalidRefreshToken);
+  const loginTokenHash = createHash('sha256').update(login.refreshToken).digest('hex');
+  const revoked = await db.query('SELECT f."revokedAt" FROM "RefreshTokenFamily" f JOIN "RefreshToken" t ON t."familyId" = f."id" WHERE t."tokenHash" = $1', [loginTokenHash]);
+  assert.ok(revoked.rows[0].revokedAt);
+  console.log('PASS live integration: jobs, tenant-safe identity, ten-role seed, Argon2, login, JWT and refresh replay revocation.');
 } catch (error) {
   const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : 'NO_CODE';
   const detail = stage === 'configuration guard' && error instanceof Error ? ` ${error.message}` : '';
@@ -101,6 +134,8 @@ try {
     if (consumer) await consumer.close();
     if (producer) { await producer.queue.obliterate({ force: true }); await producer.close(); }
     if (db && scope) await db.query('DELETE FROM "JobRecord" WHERE "scope" = $1', [scope]);
+    if (db && authOrganizationId) await db.query('DELETE FROM "Organization" WHERE "id" = $1', [authOrganizationId]);
+    if (db && authUserId) await db.query('DELETE FROM "User" WHERE "id" = $1', [authUserId]);
   } catch { console.error('Test resource cleanup failed for this run.'); process.exitCode = 1; }
   finally { if (db) await db.end(); }
 }

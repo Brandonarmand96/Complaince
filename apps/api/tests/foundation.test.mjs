@@ -5,10 +5,13 @@ import { pino } from 'pino';
 import { createApp } from '../dist/app.js';
 import { validateEnvironment } from '../dist/config/environment.js';
 import { assertTestResources } from '@complyos/runtime/testing';
+import { hashPassword, InvalidCredentials, issueAccessToken, verifyAccessToken, verifyPassword } from '@complyos/runtime/auth';
+const authConfig = { accessSecret: 'test-secret-that-is-at-least-32-characters-long', issuer: 'test-issuer', audience: 'test-audience', accessTtlSeconds: 900, refreshTtlSeconds: 3600 };
 function fixture(overrides = {}) {
   const entries = [];
   const logger = pino(new Writable({ write(chunk, _encoding, callback) { entries.push(JSON.parse(chunk.toString())); callback(); } }));
-  const deps = { checkDatabase: jest.fn().mockResolvedValue(undefined), checkRedis: jest.fn().mockResolvedValue(undefined), submitJob: jest.fn().mockResolvedValue({ id: 'id', label: 'Check', status: 'QUEUED', attempts: 0, lastError: null }), listJobs: jest.fn().mockResolvedValue({ data: [], page: 1, limit: 20, total: 0 }), webOrigin: 'http://127.0.0.1:5173', nodeEnv: 'test', logger, ...overrides };
+  const authResult = { accessToken: 'access', refreshToken: 'refresh-token-value-long-enough', expiresIn: 900, user: { id: 'user-id', email: 'owner@example.com', displayName: 'Owner' } };
+  const deps = { checkDatabase: jest.fn().mockResolvedValue(undefined), checkRedis: jest.fn().mockResolvedValue(undefined), submitJob: jest.fn().mockResolvedValue({ id: 'id', label: 'Check', status: 'QUEUED', attempts: 0, lastError: null }), listJobs: jest.fn().mockResolvedValue({ data: [], page: 1, limit: 20, total: 0 }), webOrigin: 'http://127.0.0.1:5173', nodeEnv: 'test', logger, authConfig, auth: { register: jest.fn().mockResolvedValue(authResult), login: jest.fn().mockResolvedValue(authResult), refresh: jest.fn().mockResolvedValue(authResult) }, ...overrides };
   return { app: createApp(deps), deps, entries };
 }
 describe('foundation API', () => {
@@ -80,7 +83,7 @@ describe('foundation API', () => {
   });
 });
 describe('configuration and integration guard', () => {
-  const env = { DATABASE_URL: 'postgresql://u:p@db.example/dev', REDIS_URL: 'rediss://u:p@cache.example:6379/0' };
+  const env = { DATABASE_URL: 'postgresql://u:p@db.example/dev', REDIS_URL: 'rediss://u:p@cache.example:6379/0', ACCESS_JWT_SECRET: 'test-secret-that-is-at-least-32-characters-long' };
   it('accepts hosted provider URLs and rejects missing, malformed and secret-bearing invalid input safely', () => {
     expect(validateEnvironment(env).port).toBe(4000);
     expect(() => validateEnvironment({ ...env, REDIS_URL: '' })).toThrow('REDIS_URL is required');
@@ -92,5 +95,40 @@ describe('configuration and integration guard', () => {
     expect(() => assertTestResources('postgresql://u:p@remote/dev', 'redis://remote/15')).toThrow();
     expect(() => assertTestResources('postgresql://u:p@remote/complyos_test', 'redis://remote/0', { redisUrl: 'redis://other:password@remote/0' })).toThrow();
     expect(() => assertTestResources('postgresql://u:p@remote/complyos_test', 'rediss://test-cache/0', { redisUrl: 'rediss://app-cache/0' })).not.toThrow();
+  });
+});
+
+describe('authentication foundation', () => {
+  it('hashes passwords with Argon2id and rejects an invalid password', async () => {
+    const hash = await hashPassword('correct horse battery staple');
+    expect(hash).toMatch(/^\$argon2id\$/);
+    await expect(verifyPassword(hash, 'correct horse battery staple')).resolves.toBe(true);
+    await expect(verifyPassword(hash, 'incorrect password')).resolves.toBe(false);
+  });
+  it('issues and verifies constrained access JWTs', async () => {
+    const token = await issueAccessToken(authConfig, 'user-id');
+    await expect(verifyAccessToken(authConfig, token)).resolves.toMatchObject({ userId: 'user-id' });
+    await expect(verifyAccessToken({ ...authConfig, audience: 'wrong' }, token)).rejects.toBeInstanceOf(InvalidCredentials);
+    await expect(verifyAccessToken({ ...authConfig, issuer: 'wrong' }, token)).rejects.toBeInstanceOf(InvalidCredentials);
+    await expect(verifyAccessToken({ ...authConfig, accessSecret: 'different-secret-that-is-at-least-32-characters' }, token)).rejects.toBeInstanceOf(InvalidCredentials);
+    const expired = await issueAccessToken({ ...authConfig, accessTtlSeconds: -1 }, 'user-id');
+    await expect(verifyAccessToken(authConfig, expired)).rejects.toBeInstanceOf(InvalidCredentials);
+  });
+  it('validates registration, keeps login failures generic and authenticates bearer requests', async () => {
+    const { app, deps } = fixture();
+    const invalid = await request(app).post('/auth/register').send({ email: 'bad', password: 'short', displayName: '', organizationName: '' });
+    expect(invalid.status).toBe(400);
+    expect(deps.auth.register).not.toHaveBeenCalled();
+    const registered = await request(app).post('/auth/register').send({ email: 'Owner@Example.com', password: 'correct horse battery staple', displayName: 'Owner', organizationName: 'Example' });
+    expect(registered.status).toBe(201);
+    const failing = fixture({ auth: { ...deps.auth, login: jest.fn().mockRejectedValue(new InvalidCredentials()) } });
+    const login = await request(failing.app).post('/auth/login').send({ email: 'unknown@example.com', password: 'any password' });
+    expect(login.status).toBe(401);
+    expect(login.body.error.message).toBe('Email or password is incorrect.');
+    expect((await request(app).get('/auth/verify')).status).toBe(401);
+    const token = await issueAccessToken(authConfig, 'user-id');
+    const verified = await request(app).get('/auth/verify').set('Authorization', `Bearer ${token}`);
+    expect(verified.status).toBe(200);
+    expect(verified.body.userId).toBe('user-id');
   });
 });

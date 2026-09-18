@@ -4,8 +4,9 @@ import swaggerUi from 'swagger-ui-express';
 import type { HealthResponse, JobSummary, PageResult } from '@complyos/contracts';
 import { createLogger } from '@complyos/runtime/logger';
 import { IdempotencyConflict, type HealthInput, type JobPage } from '@complyos/runtime/jobs';
-import { HttpError, errorHandler, parseJobQuery, requestLogging, validateBody } from './http.js';
-import { HealthJobDto } from './dto.js';
+import { EmailAlreadyRegistered, InvalidCredentials, InvalidRefreshToken, type AuthConfig, type AuthResult } from '@complyos/runtime/auth';
+import { authenticateAccessToken, HttpError, errorHandler, parseJobQuery, requestLogging, validateBody } from './http.js';
+import { HealthJobDto, LoginDto, RefreshDto, RegisterDto } from './dto.js';
 import { openapi } from './openapi.js';
 export interface AppDependencies {
   checkDatabase: () => Promise<unknown>;
@@ -14,6 +15,12 @@ export interface AppDependencies {
   listJobs: (input: JobPage) => Promise<PageResult<JobSummary>>;
   webOrigin: string;
   nodeEnv: string;
+  authConfig: AuthConfig;
+  auth: {
+    register: (input: RegisterDto) => Promise<AuthResult>;
+    login: (input: LoginDto) => Promise<AuthResult>;
+    refresh: (token: string) => Promise<AuthResult>;
+  };
   logger?: ReturnType<typeof createLogger>;
 }
 export function createApp(deps: AppDependencies) {
@@ -32,7 +39,7 @@ export function createApp(deps: AppDependencies) {
     if (origin) {
       response.setHeader('Access-Control-Allow-Origin', origin);
       response.setHeader('Access-Control-Expose-Headers', 'X-Request-Id');
-      response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Idempotency-Key');
+      response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Idempotency-Key, Authorization');
       response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     }
     if (request.method === 'OPTIONS') { response.sendStatus(204); return; }
@@ -50,6 +57,28 @@ export function createApp(deps: AppDependencies) {
   });
   app.get('/api/openapi.json', (_request, response) => response.json(openapi));
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapi, { swaggerOptions: { validatorUrl: null } }));
+  app.post('/auth/register', validateBody(RegisterDto), async (_request, response) => {
+    try { response.status(201).json(await deps.auth.register(response.locals.body as RegisterDto)); }
+    catch (error) {
+      if (error instanceof EmailAlreadyRegistered) throw new HttpError(409, 'EMAIL_UNAVAILABLE', 'An account cannot be created with those details.');
+      throw error;
+    }
+  });
+  app.post('/auth/login', validateBody(LoginDto), async (_request, response) => {
+    try { response.json(await deps.auth.login(response.locals.body as LoginDto)); }
+    catch (error) {
+      if (error instanceof InvalidCredentials) throw new HttpError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect.');
+      throw error;
+    }
+  });
+  app.post('/auth/refresh', validateBody(RefreshDto), async (_request, response) => {
+    try { response.json(await deps.auth.refresh((response.locals.body as RefreshDto).refreshToken)); }
+    catch (error) {
+      if (error instanceof InvalidRefreshToken) throw new HttpError(401, 'INVALID_REFRESH_TOKEN', 'The refresh session is invalid or expired.');
+      throw error;
+    }
+  });
+  app.get('/auth/verify', authenticateAccessToken(deps.authConfig), (_request, response) => response.json({ authenticated: true, userId: (response.locals.auth as { userId: string }).userId }));
   // Development plumbing only, never an unauthenticated production job interface.
   if (deps.nodeEnv !== 'production') {
     app.get('/api/v1/setup/jobs', async (request, response) => {

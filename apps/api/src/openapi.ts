@@ -1,12 +1,18 @@
 const errorResponse = { description: 'Safe error with request correlation ID', content: { 'application/json': { schema: { $ref: '#/components/schemas/ApiError' } } } };
 const healthSchema = { type: 'object', required: ['status', 'service'], properties: { status: { type: 'string', enum: ['ok', 'unavailable'] }, service: { type: 'string', enum: ['complyos-api'] }, checks: { type: 'object', properties: { database: { type: 'string', enum: ['ok', 'unavailable'] }, redis: { type: 'string', enum: ['ok', 'unavailable'] } } } } };
 const jobSchema = { type: 'object', properties: { id: { type: 'string', format: 'uuid' }, label: { type: 'string' }, status: { type: 'string', enum: ['QUEUED', 'RETRYING', 'COMPLETED', 'FAILED'] }, attempts: { type: 'integer' }, lastError: { type: 'string', nullable: true } } };
+const jsonBody = (schema: object) => ({ required: true, content: { 'application/json': { schema } } });
+const authResponse = { description: 'Access and rotating refresh credentials', content: { 'application/json': { schema: { $ref: '#/components/schemas/AuthResult' } } } };
 export const openapi = {
-  openapi: '3.0.3', info: { title: 'ComplyOS API', version: '0.1.0', description: 'Local foundation. Setup jobs are unavailable in production. Authentication is a later phase.' },
+  openapi: '3.0.3', info: { title: 'ComplyOS API', version: '0.2.0', description: 'Local foundation with database-backed identity and rotating authentication credentials. Setup jobs are unavailable in production.' },
   servers: [{ url: '/' }],
   paths: {
     '/health/live': { get: { summary: 'Process liveness', responses: { '200': { description: 'Process is running', content: { 'application/json': { schema: healthSchema } } } } } },
     '/health/ready': { get: { summary: 'PostgreSQL and Redis readiness', responses: { '200': { description: 'Dependencies reachable', content: { 'application/json': { schema: healthSchema } } }, '503': { description: 'One or more dependencies unavailable', content: { 'application/json': { schema: healthSchema } } } } } },
+    '/auth/register': { post: { summary: 'Create an identity and initial organization', requestBody: jsonBody({ type: 'object', additionalProperties: false, required: ['email', 'password', 'displayName', 'organizationName'], properties: { email: { type: 'string', format: 'email' }, password: { type: 'string', minLength: 12, maxLength: 128 }, displayName: { type: 'string', minLength: 2, maxLength: 100 }, organizationName: { type: 'string', minLength: 2, maxLength: 120 } } }), responses: { '201': authResponse, '400': errorResponse, '409': errorResponse } } },
+    '/auth/login': { post: { summary: 'Authenticate with email and password', requestBody: jsonBody({ type: 'object', additionalProperties: false, required: ['email', 'password'], properties: { email: { type: 'string', format: 'email' }, password: { type: 'string', minLength: 1, maxLength: 128 } } }), responses: { '200': authResponse, '400': errorResponse, '401': errorResponse } } },
+    '/auth/refresh': { post: { summary: 'Rotate a refresh token', requestBody: jsonBody({ type: 'object', additionalProperties: false, required: ['refreshToken'], properties: { refreshToken: { type: 'string', minLength: 20, maxLength: 200 } } }), responses: { '200': authResponse, '400': errorResponse, '401': errorResponse } } },
+    '/auth/verify': { get: { summary: 'Verify an access token', security: [{ bearerAuth: [] }], responses: { '200': { description: 'Verified identity' }, '401': errorResponse } } },
     '/api/v1/setup/jobs': {
       get: { summary: 'List system health jobs (development only)', parameters: [
         { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 10000, default: 1 } },
@@ -21,6 +27,5 @@ export const openapi = {
       },
     },
   },
-  components: { schemas: { ApiError: { type: 'object', required: ['error', 'requestId'], properties: { requestId: { type: 'string' }, error: { type: 'object', required: ['code', 'message'], properties: { code: { type: 'string' }, message: { type: 'string' }, fields: { type: 'object', additionalProperties: { type: 'array', items: { type: 'string' } } } } } } } } },
+  components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } }, schemas: { ApiError: { type: 'object', required: ['error', 'requestId'], properties: { requestId: { type: 'string' }, error: { type: 'object', required: ['code', 'message'], properties: { code: { type: 'string' }, message: { type: 'string' }, fields: { type: 'object', additionalProperties: { type: 'array', items: { type: 'string' } } } } } } }, AuthResult: { type: 'object', required: ['accessToken', 'refreshToken', 'expiresIn', 'user'], properties: { accessToken: { type: 'string' }, refreshToken: { type: 'string' }, expiresIn: { type: 'integer' }, user: { type: 'object', required: ['id', 'email'], properties: { id: { type: 'string', format: 'uuid' }, email: { type: 'string', format: 'email' }, displayName: { type: 'string', nullable: true } } } } } } },
 };
-

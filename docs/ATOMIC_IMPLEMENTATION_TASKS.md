@@ -134,14 +134,14 @@ Roadmap reference: B01–B06.
 | [x] | T0040 | Add OrganizationMembership with status and tenant-safe uniqueness. | Completed: membership references user/organization, constrains lifecycle status, uniquely keys each organization/user pair and exposes a tenant-composite key. Live integration proved one user can join two organizations but cannot join either twice. | T0039 |
 | [x] | T0041 | Add Role, Permission and RolePermission models. | Completed: roles are organization-scoped, permission keys are reusable global capabilities, and the many-to-many join has cascade-safe foreign keys. Live integration assigned one permission to roles in both tenants. | T0040 |
 | [x] | T0042 | Add membership-to-role grants. | Completed: `MembershipRole` grants use composite membership/role tenant foreign keys. Live integration granted different roles to one user's two memberships and rejected a cross-tenant role grant at the database boundary. | T0041 |
-| [ ] | T0043 | Seed the ten named roles and their permission matrix. | Every role from the prompt has explicit allowed actions. | T0042 |
-| [ ] | T0044 | Add Argon2 password hash/verify helpers. | Stored credentials are hashes and invalid passwords fail verification. | T0043 |
-| [ ] | T0045 | Add POST /auth/register. | A valid registration creates the identity and initial organization transactionally. | T0044 |
-| [ ] | T0046 | Add POST /auth/login with generic credential errors. | Valid credentials authenticate; failures do not reveal whether an email exists. | T0045 |
-| [ ] | T0047 | Add access-JWT issue/verify helpers. | Wrong issuer, audience, signature and expired tokens fail. | T0046 |
-| [ ] | T0048 | Add refresh-token-family storage. | Only a hash of each refresh secret is stored. | T0047 |
-| [ ] | T0049 | Add POST /auth/refresh with rotation. | Using an old refresh token revokes that token family. | T0048 |
-| [ ] | T0050 | Add authenticated request middleware. | Protected handlers receive a verified user identity. | T0049 |
+| [x] | T0043 | Seed the ten named roles and their permission matrix. | Completed: each new organization receives ten explicit built-in roles mapped to reusable capability keys. Live integration compared every persisted role and permission set with the declared matrix. | T0042 |
+| [x] | T0044 | Add Argon2 password hash/verify helpers. | Completed: passwords use Argon2id with explicit memory/time/parallelism parameters; valid and invalid verification tests pass, and live storage contains no raw password. | T0043 |
+| [x] | T0045 | Add POST /auth/register. | Completed: strict DTO validation precedes a transaction that creates user, organization, membership, roles, owner grant and initial refresh family. Live integration and route tests pass. | T0044 |
+| [x] | T0046 | Add POST /auth/login with generic credential errors. | Completed: normalized email lookup and Argon2 verification issue a new session; missing-user and wrong-password cases share the same safe 401 response. Unit and live tests pass. | T0045 |
+| [x] | T0047 | Add access-JWT issue/verify helpers. | Completed: HS256 access JWTs require configured secret, issuer, audience, subject, ID and expiry. Wrong issuer, audience, signature and expired-token tests pass. | T0046 |
+| [x] | T0048 | Add refresh-token-family storage. | Completed: families and individual token generations store expiry/revocation state; only SHA-256 hashes of 256-bit opaque secrets are persisted. Live storage assertions pass. | T0047 |
+| [x] | T0049 | Add POST /auth/refresh with rotation. | Completed: refresh consumes the current generation and creates the next transactionally. Live replay of an old token persisted family-wide revocation and invalidated its newer sibling. | T0048 |
+| [x] | T0050 | Add authenticated request middleware. | Completed: bearer middleware verifies constrained JWTs and places `{ userId, tokenId }` in request-local state. Protected-route tests cover missing, invalid and valid credentials. | T0049 |
 | [ ] | T0051 | Add POST /auth/logout. | The current refresh session is revoked. | T0050 |
 | [ ] | T0052 | Add GET /auth/me. | The response contains allowed identity/membership fields only. | T0051 |
 | [ ] | T0053 | Build the registration form. | Successful submission opens the correct next onboarding step. | T0052 |

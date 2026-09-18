@@ -5,6 +5,7 @@ import { plainToInstance, type ClassConstructor } from 'class-transformer';
 import { validate, type ValidationError } from 'class-validator';
 import type { ApiErrorResponse } from '@complyos/contracts';
 import type { createLogger } from '@complyos/runtime/logger';
+import { InvalidCredentials, type AccessIdentity, type AuthConfig, verifyAccessToken } from '@complyos/runtime/auth';
 
 export class HttpError extends Error {
   constructor(public status: number, public code: string, message: string, public fields?: Record<string, string[]>) { super(message); }
@@ -45,6 +46,19 @@ export function validateBody<T extends object>(Dto: ClassConstructor<T>): Reques
     if (errors.length) throw new HttpError(400, 'VALIDATION_ERROR', 'Check the highlighted fields.', fieldsFor(errors));
     response.locals.body = body;
     next();
+  };
+}
+export function authenticateAccessToken(config: AuthConfig): RequestHandler {
+  return async (request, response, next) => {
+    const authorization = request.get('Authorization');
+    if (!authorization?.startsWith('Bearer ') || authorization.length <= 7) return next(new HttpError(401, 'UNAUTHENTICATED', 'Authentication is required.'));
+    try {
+      response.locals.auth = await verifyAccessToken(config, authorization.slice(7)) satisfies AccessIdentity;
+      next();
+    } catch (error) {
+      if (error instanceof InvalidCredentials) return next(new HttpError(401, 'UNAUTHENTICATED', 'Authentication is required.'));
+      next(error);
+    }
   };
 }
 export function parseJobQuery(query: Record<string, unknown>) {

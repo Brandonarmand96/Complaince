@@ -1,0 +1,126 @@
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import argon2 from 'argon2';
+import { SignJWT, jwtVerify, errors as joseErrors } from 'jose';
+import type { Database } from './database.js';
+import { transaction } from './database.js';
+import { BUILT_IN_ROLES, PERMISSIONS, ROLE_PERMISSION_MATRIX } from './roles.js';
+
+export interface AuthConfig {
+  accessSecret: string;
+  issuer: string;
+  audience: string;
+  accessTtlSeconds: number;
+  refreshTtlSeconds: number;
+}
+export interface AccessIdentity { userId: string; tokenId: string }
+export interface AuthResult {
+  accessToken: string;
+  refreshToken: string;
+  expiresIn: number;
+  user: { id: string; email: string; displayName: string | null };
+}
+export class InvalidCredentials extends Error {}
+export class EmailAlreadyRegistered extends Error {}
+export class InvalidRefreshToken extends Error {}
+
+export const normalizeEmail = (email: string) => email.trim().toLowerCase();
+export function hashPassword(password: string) {
+  return argon2.hash(password, { type: argon2.argon2id, memoryCost: 19456, timeCost: 2, parallelism: 1 });
+}
+export async function verifyPassword(hash: string, password: string) {
+  try { return await argon2.verify(hash, password); } catch { return false; }
+}
+const secretKey = (secret: string) => new TextEncoder().encode(secret);
+export async function issueAccessToken(config: AuthConfig, userId: string) {
+  return new SignJWT({})
+    .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+    .setSubject(userId).setJti(randomUUID()).setIssuer(config.issuer).setAudience(config.audience)
+    .setIssuedAt().setExpirationTime(Math.floor(Date.now() / 1000) + config.accessTtlSeconds)
+    .sign(secretKey(config.accessSecret));
+}
+export async function verifyAccessToken(config: AuthConfig, token: string): Promise<AccessIdentity> {
+  try {
+    const { payload } = await jwtVerify(token, secretKey(config.accessSecret), { algorithms: ['HS256'], issuer: config.issuer, audience: config.audience });
+    if (!payload.sub || !payload.jti) throw new InvalidCredentials();
+    return { userId: payload.sub, tokenId: payload.jti };
+  } catch (error) {
+    if (error instanceof joseErrors.JOSEError || error instanceof InvalidCredentials) throw new InvalidCredentials();
+    throw error;
+  }
+}
+const newRefreshSecret = () => randomBytes(32).toString('base64url');
+const refreshHash = (secret: string) => createHash('sha256').update(secret).digest('hex');
+
+export function authStore(db: Database, config: AuthConfig) {
+  async function seedRoles(client: import('pg').PoolClient, organizationId: string) {
+    const permissionIds = new Map<string, string>();
+    for (const key of PERMISSIONS) {
+      const id = randomUUID();
+      const result = await client.query('INSERT INTO "Permission" ("id", "key") VALUES ($1, $2) ON CONFLICT ("key") DO UPDATE SET "key" = EXCLUDED."key" RETURNING "id"', [id, key]);
+      permissionIds.set(key, result.rows[0].id);
+    }
+    const roleIds = new Map<string, string>();
+    for (const name of BUILT_IN_ROLES) {
+      const roleId = randomUUID();
+      await client.query('INSERT INTO "Role" ("id", "organizationId", "name", "isSystem") VALUES ($1, $2, $3, TRUE)', [roleId, organizationId, name]);
+      roleIds.set(name, roleId);
+      for (const key of ROLE_PERMISSION_MATRIX[name]) await client.query('INSERT INTO "RolePermission" ("roleId", "permissionId") VALUES ($1, $2)', [roleId, permissionIds.get(key)]);
+    }
+    return roleIds;
+  }
+  async function createSession(client: import('pg').PoolClient, user: { id: string; email: string; displayName: string | null }): Promise<AuthResult> {
+    const familyId = randomUUID();
+    const tokenId = randomUUID();
+    const refreshToken = newRefreshSecret();
+    const expiresAt = new Date(Date.now() + config.refreshTtlSeconds * 1000);
+    await client.query('INSERT INTO "RefreshTokenFamily" ("id", "userId", "expiresAt") VALUES ($1, $2, $3)', [familyId, user.id, expiresAt]);
+    await client.query('INSERT INTO "RefreshToken" ("id", "familyId", "tokenHash", "expiresAt") VALUES ($1, $2, $3, $4)', [tokenId, familyId, refreshHash(refreshToken), expiresAt]);
+    return { accessToken: await issueAccessToken(config, user.id), refreshToken, expiresIn: config.accessTtlSeconds, user };
+  }
+  return {
+    async register(input: { email: string; password: string; displayName: string; organizationName: string }) {
+      const passwordHash = await hashPassword(input.password);
+      try {
+        return await transaction(db, async client => {
+          const userId = randomUUID();
+          const organizationId = randomUUID();
+          const membershipId = randomUUID();
+          const userResult = await client.query('INSERT INTO "User" ("id", "email", "displayName", "passwordHash") VALUES ($1, $2, $3, $4) RETURNING "id", "normalizedEmail" AS "email", "displayName"', [userId, input.email, input.displayName.trim(), passwordHash]);
+          await client.query('INSERT INTO "Organization" ("id", "name") VALUES ($1, $2)', [organizationId, input.organizationName.trim()]);
+          await client.query('INSERT INTO "OrganizationMembership" ("id", "organizationId", "userId") VALUES ($1, $2, $3)', [membershipId, organizationId, userId]);
+          const roles = await seedRoles(client, organizationId);
+          await client.query('INSERT INTO "MembershipRole" ("membershipId", "roleId", "organizationId") VALUES ($1, $2, $3)', [membershipId, roles.get('Organization Owner'), organizationId]);
+          return createSession(client, userResult.rows[0]);
+        });
+      } catch (error) {
+        if ((error as { code?: string }).code === '23505') throw new EmailAlreadyRegistered();
+        throw error;
+      }
+    },
+    async login(input: { email: string; password: string }) {
+      const result = await db.query('SELECT "id", "normalizedEmail" AS "email", "displayName", "passwordHash" FROM "User" WHERE "normalizedEmail" = $1', [normalizeEmail(input.email)]);
+      const user = result.rows[0];
+      if (!user?.passwordHash || !(await verifyPassword(user.passwordHash, input.password))) throw new InvalidCredentials();
+      return transaction(db, client => createSession(client, { id: user.id, email: user.email, displayName: user.displayName }));
+    },
+    async refresh(secret: string) {
+      const outcome = await transaction(db, async client => {
+        const result = await client.query('SELECT t."id", t."familyId", t."usedAt", t."revokedAt", t."expiresAt", f."revokedAt" AS "familyRevokedAt", f."expiresAt" AS "familyExpiresAt", u."id" AS "userId", u."normalizedEmail" AS "email", u."displayName" FROM "RefreshToken" t JOIN "RefreshTokenFamily" f ON f."id" = t."familyId" JOIN "User" u ON u."id" = f."userId" WHERE t."tokenHash" = $1 FOR UPDATE OF t, f', [refreshHash(secret)]);
+        const token = result.rows[0];
+        if (!token) throw new InvalidRefreshToken();
+        if (token.usedAt || token.revokedAt || token.familyRevokedAt) {
+          await client.query('UPDATE "RefreshTokenFamily" SET "revokedAt" = COALESCE("revokedAt", NOW()) WHERE "id" = $1', [token.familyId]);
+          await client.query('UPDATE "RefreshToken" SET "revokedAt" = COALESCE("revokedAt", NOW()) WHERE "familyId" = $1', [token.familyId]);
+          return { replayed: true } as const;
+        }
+        if (new Date(token.expiresAt) <= new Date() || new Date(token.familyExpiresAt) <= new Date()) throw new InvalidRefreshToken();
+        await client.query('UPDATE "RefreshToken" SET "usedAt" = NOW() WHERE "id" = $1', [token.id]);
+        const nextSecret = newRefreshSecret();
+        await client.query('INSERT INTO "RefreshToken" ("id", "familyId", "tokenHash", "expiresAt") VALUES ($1, $2, $3, $4)', [randomUUID(), token.familyId, refreshHash(nextSecret), token.familyExpiresAt]);
+        return { replayed: false, result: { accessToken: await issueAccessToken(config, token.userId), refreshToken: nextSecret, expiresIn: config.accessTtlSeconds, user: { id: token.userId, email: token.email, displayName: token.displayName } } satisfies AuthResult } as const;
+      });
+      if (outcome.replayed) throw new InvalidRefreshToken();
+      return outcome.result;
+    },
+  };
+}

@@ -10,7 +10,14 @@ export function validateEnvironment(env: NodeJS.ProcessEnv) {
     const url = new URL(webOrigin);
     if (!['http:', 'https:'].includes(url.protocol) || url.origin !== webOrigin) throw new Error();
   } catch { throw new ConfigurationError(['WEB_ORIGIN must be an HTTP(S) origin without a path']); }
-  return Object.freeze({ ...connections, port, webOrigin });
+  const accessSecret = env.ACCESS_JWT_SECRET ?? '';
+  if (accessSecret.length < 32) throw new ConfigurationError(['ACCESS_JWT_SECRET must contain at least 32 characters']);
+  const accessTtlSeconds = Number(env.ACCESS_JWT_TTL_SECONDS ?? '900');
+  const refreshTtlSeconds = Number(env.REFRESH_TOKEN_TTL_SECONDS ?? '2592000');
+  if (!Number.isInteger(accessTtlSeconds) || accessTtlSeconds < 60 || accessTtlSeconds > 3600) throw new ConfigurationError(['ACCESS_JWT_TTL_SECONDS must be an integer from 60 to 3600']);
+  if (!Number.isInteger(refreshTtlSeconds) || refreshTtlSeconds < 3600 || refreshTtlSeconds > 7776000) throw new ConfigurationError(['REFRESH_TOKEN_TTL_SECONDS must be an integer from 3600 to 7776000']);
+  const auth = { accessSecret, issuer: env.ACCESS_JWT_ISSUER ?? 'complyos-api', audience: env.ACCESS_JWT_AUDIENCE ?? 'complyos-web', accessTtlSeconds, refreshTtlSeconds };
+  return Object.freeze({ ...connections, port, webOrigin, auth: Object.freeze(auth) });
 }
 export type ApiEnvironment = ReturnType<typeof validateEnvironment>;
 export function loadEnvironment(overrides: NodeJS.ProcessEnv = process.env, file = new URL('../../.env', import.meta.url)) {
