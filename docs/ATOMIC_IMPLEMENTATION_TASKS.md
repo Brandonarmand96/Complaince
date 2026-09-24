@@ -152,12 +152,12 @@ Roadmap reference: B01–B06.
 | [x] | T0058 | Add GET /auth/sessions. | Completed: the protected query filters by authenticated user, active/nonexpired state and bounded session fields. Live and route tests pass. | T0057 |
 | [x] | T0059 | Add DELETE /auth/sessions/:id. | Completed: revocation requires a valid bearer identity and updates only a matching user/session pair; foreign or absent IDs return 404. Tests pass. | T0058 |
 | [x] | T0060 | Build the active-session list with revoke action. | Completed: the responsive list shows browser, address and last activity, includes loading/error/empty states, and removes a session only after confirmed 204. Desktop/mobile tests pass. | T0059 |
-| [ ] | T0061 | Add failed-login counters and lockout expiry. | Repeated failed login blocks attempts until the defined reset condition. | T0060 |
-| [ ] | T0062 | Add authentication route rate limiting. | Excessive attempts return 429. | T0061 |
-| [ ] | T0063 | Add inactive/locked/suspended-account checks. | Existing tokens cannot bypass a changed account status. | T0062 |
-| [ ] | T0064 | Add inactivity-timeout checks. | An idle session beyond the configured limit is rejected. | T0063 |
-| [ ] | T0065 | Add LoginHistory records. | Successful and failed attempts record outcome and request context. | T0064 |
-| [ ] | T0066 | Add a suspicious-login rule for a new device. | A matching login creates a security event without blocking every new device. | T0065 |
+| [x] | T0061 | Add failed-login counters and lockout expiry. | Completed: five consecutive failures create a 15-minute lock; expired locks allow a correct login, which resets count/expiry. Live integration verifies the full transition. | T0060 |
+| [x] | T0062 | Add authentication route rate limiting. | Completed: per-IP/per-route fixed-window limits protect login, registration and verification actions with a safe 429 response. API tests prove the threshold. | T0061 |
+| [x] | T0063 | Add inactive/locked/suspended-account checks. | Completed: login and every protected access/refresh validate ACTIVE user status; live suspension tests prove an existing access token is denied. | T0062 |
+| [x] | T0064 | Add inactivity-timeout checks. | Completed: sessions older than the configured idle window fail protected access and refresh; successful activity advances last-seen. Live expiry tests pass. | T0063 |
+| [x] | T0065 | Add LoginHistory records. | Completed: success, invalid credentials, lockout and disabled-account outcomes append normalized identity and nullable IP/device context. Live history assertions pass. | T0064 |
+| [x] | T0066 | Add a suspicious-login rule for a new device. | Completed: a successful login from a previously unseen IP/user-agent pair creates one NEW_DEVICE_LOGIN event after the first known login without blocking access. Live tests pass. | T0065 |
 
 ### 03. Account recovery, invitations and MFA
 
@@ -165,10 +165,10 @@ Roadmap reference: B04–B06.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0067 | Add an SMTP transport configured for a local capture inbox. | A test message appears locally without contacting a real recipient. | T0066 |
-| [ ] | T0068 | Add one-use email-verification token storage. | Only a token hash and expiration are persisted. | T0067 |
-| [ ] | T0069 | Add the email-verification request action. | The local inbox receives the activation URL. | T0068 |
-| [ ] | T0070 | Add the email-verification consume action. | Expired and reused tokens fail. | T0069 |
+| [x] | T0067 | Add an SMTP transport configured for a local capture inbox. | Completed: Nodemailer SMTP defaults to the local capture host/port with TLS disabled; an injectable JSON capture transport proves message delivery without contacting a recipient. | T0066 |
+| [x] | T0068 | Add one-use email-verification token storage. | Completed: verification records store only SHA-256 token hash, user, expiry, consumption and creation timestamps. Live assertions prove the raw secret is absent. | T0067 |
+| [x] | T0069 | Add the email-verification request action. | Completed: the neutral 202 action invalidates prior outstanding tokens and sends the activation URL through the configured local mailer; unknown/already-verified email remains neutral. Capture test passes. | T0068 |
+| [x] | T0070 | Add the email-verification consume action. | Completed: transactional consumption marks the token and user verified exactly once; live tests reject expired and reused secrets. | T0069 |
 | [ ] | T0071 | Build the verification-result page. | It shows success or a recoverable expired-token state. | T0070 |
 | [ ] | T0072 | Add password-reset request action. | It returns the same public result for known and unknown emails. | T0071 |
 | [ ] | T0073 | Add password-reset completion action. | A successful reset revokes previous sessions and consumes the token. | T0072 |

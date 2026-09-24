@@ -48,12 +48,23 @@ export function validateBody<T extends object>(Dto: ClassConstructor<T>): Reques
     next();
   };
 }
-export function authenticateAccessToken(config: AuthConfig): RequestHandler {
+export function createRateLimiter(limit: number, windowMs: number, now = () => Date.now()): RequestHandler {
+  const buckets = new Map<string, { count: number; resetAt: number }>();
+  return (request, _response, next) => {
+    const key = `${request.ip}:${request.path}`; const time = now(); const current = buckets.get(key);
+    if (!current || current.resetAt <= time) { buckets.set(key, { count: 1, resetAt: time + windowMs }); return next(); }
+    current.count += 1;
+    if (current.count > limit) return next(new HttpError(429, 'RATE_LIMITED', 'Too many attempts. Wait before trying again.'));
+    next();
+  };
+}
+export function authenticateAccessToken(config: AuthConfig, validate?: (identity: AccessIdentity) => Promise<void>): RequestHandler {
   return async (request, response, next) => {
     const authorization = request.get('Authorization');
     if (!authorization?.startsWith('Bearer ') || authorization.length <= 7) return next(new HttpError(401, 'UNAUTHENTICATED', 'Authentication is required.'));
     try {
       response.locals.auth = await verifyAccessToken(config, authorization.slice(7)) satisfies AccessIdentity;
+      await validate?.(response.locals.auth as AccessIdentity);
       next();
     } catch (error) {
       if (error instanceof InvalidCredentials) return next(new HttpError(401, 'UNAUTHENTICATED', 'Authentication is required.'));

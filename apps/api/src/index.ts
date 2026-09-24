@@ -5,13 +5,14 @@ import { createLogger } from '@complyos/runtime/logger';
 import { checkRedis } from '@complyos/runtime/redis';
 import { jobStore, makeQueue } from '@complyos/runtime/jobs';
 import { authStore } from '@complyos/runtime/auth';
+import { createSmtpMailer } from '@complyos/runtime/mail';
 const logger = createLogger();
 try {
   const env = loadEnvironment();
   const db = createDatabase(env.databaseUrl);
   const producer = makeQueue(env.redisUrl, env.queuePrefix);
   const store = jobStore(db, producer.queue, env.queuePrefix);
-  const auth = authStore(db, env.auth);
+  const auth = authStore(db, env.auth, { mailer: createSmtpMailer(env.smtp), webOrigin: env.webOrigin });
   const app = createApp({
     checkDatabase: () => db.query('SELECT 1'), checkRedis: () => checkRedis(env.redisUrl),
     submitJob: store.submit, listJobs: store.list, logger, webOrigin: env.webOrigin, nodeEnv: env.nodeEnv, auth, authConfig: env.auth,

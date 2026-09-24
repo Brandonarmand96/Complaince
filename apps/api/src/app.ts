@@ -4,9 +4,9 @@ import swaggerUi from 'swagger-ui-express';
 import type { HealthResponse, JobSummary, PageResult } from '@complyos/contracts';
 import { createLogger } from '@complyos/runtime/logger';
 import { IdempotencyConflict, type HealthInput, type JobPage } from '@complyos/runtime/jobs';
-import { EmailAlreadyRegistered, InvalidCredentials, InvalidRefreshToken, type AuthConfig, type AuthResult } from '@complyos/runtime/auth';
-import { authenticateAccessToken, HttpError, errorHandler, parseJobQuery, requestLogging, validateBody } from './http.js';
-import { HealthJobDto, LoginDto, RefreshDto, RegisterDto } from './dto.js';
+import { AccountUnavailable, EmailAlreadyRegistered, InvalidCredentials, InvalidRefreshToken, InvalidVerificationToken, type AuthConfig, type AuthResult } from '@complyos/runtime/auth';
+import { authenticateAccessToken, createRateLimiter, HttpError, errorHandler, parseJobQuery, requestLogging, validateBody } from './http.js';
+import { EmailVerificationConsumeDto, EmailVerificationRequestDto, HealthJobDto, LoginDto, RefreshDto, RegisterDto } from './dto.js';
 import { openapi } from './openapi.js';
 export interface AppDependencies {
   checkDatabase: () => Promise<unknown>;
@@ -24,6 +24,9 @@ export interface AppDependencies {
     me: (userId: string, sessionId: string) => Promise<unknown>;
     sessions: (userId: string) => Promise<unknown[]>;
     revokeSession: (userId: string, sessionId: string) => Promise<boolean>;
+    validateAccess: (userId: string, sessionId: string) => Promise<void>;
+    requestEmailVerification: (email: string) => Promise<void>;
+    consumeEmailVerification: (token: string) => Promise<{ verified: true }>;
   };
   logger?: ReturnType<typeof createLogger>;
 }
@@ -71,17 +74,20 @@ export function createApp(deps: AppDependencies) {
     response.status(status).json(body);
   };
   const requestContext = (request: express.Request) => ({ ipAddress: request.ip, userAgent: request.get('User-Agent') });
-  app.post('/auth/register', validateBody(RegisterDto), async (request, response) => {
+  const authLimit = createRateLimiter(10, 60_000);
+  const strictAuthLimit = createRateLimiter(5, 60_000);
+  const requireAuth = authenticateAccessToken(deps.authConfig, identity => deps.auth.validateAccess(identity.userId, identity.sessionId));
+  app.post('/auth/register', strictAuthLimit, validateBody(RegisterDto), async (request, response) => {
     try { sendAuth(response, await deps.auth.register(response.locals.body as RegisterDto, requestContext(request)), 201); }
     catch (error) {
       if (error instanceof EmailAlreadyRegistered) throw new HttpError(409, 'EMAIL_UNAVAILABLE', 'An account cannot be created with those details.');
       throw error;
     }
   });
-  app.post('/auth/login', validateBody(LoginDto), async (request, response) => {
+  app.post('/auth/login', authLimit, validateBody(LoginDto), async (request, response) => {
     try { sendAuth(response, await deps.auth.login(response.locals.body as LoginDto, requestContext(request))); }
     catch (error) {
-      if (error instanceof InvalidCredentials) throw new HttpError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect.');
+      if (error instanceof InvalidCredentials || error instanceof AccountUnavailable) throw new HttpError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect.');
       throw error;
     }
   });
@@ -94,27 +100,35 @@ export function createApp(deps: AppDependencies) {
       throw error;
     }
   });
-  app.get('/auth/verify', authenticateAccessToken(deps.authConfig), (_request, response) => response.json({ authenticated: true, userId: (response.locals.auth as { userId: string }).userId }));
+  app.get('/auth/verify', requireAuth, (_request, response) => response.json({ authenticated: true, userId: (response.locals.auth as { userId: string }).userId }));
   app.post('/auth/logout', async (request, response) => {
     const token = refreshCookie(request);
     if (token) await deps.auth.logout(token);
     response.clearCookie(cookieName, { ...cookieOptions, maxAge: undefined });
     response.sendStatus(204);
   });
-  app.get('/auth/me', authenticateAccessToken(deps.authConfig), async (_request, response) => {
+  app.get('/auth/me', requireAuth, async (_request, response) => {
     const identity = response.locals.auth as { userId: string; sessionId: string };
     response.json(await deps.auth.me(identity.userId, identity.sessionId));
   });
-  app.get('/auth/sessions', authenticateAccessToken(deps.authConfig), async (_request, response) => {
+  app.get('/auth/sessions', requireAuth, async (_request, response) => {
     const identity = response.locals.auth as { userId: string };
     response.json(await deps.auth.sessions(identity.userId));
   });
-  app.delete('/auth/sessions/:id', authenticateAccessToken(deps.authConfig), async (request, response) => {
+  app.delete('/auth/sessions/:id', requireAuth, async (request, response) => {
     const identity = response.locals.auth as { userId: string };
     const sessionId = Array.isArray(request.params.id) ? request.params.id[0] : request.params.id;
     if (!sessionId || !/^[0-9a-f-]{36}$/i.test(sessionId)) throw new HttpError(400, 'VALIDATION_ERROR', 'Session ID is invalid.');
     if (!(await deps.auth.revokeSession(identity.userId, sessionId))) throw new HttpError(404, 'SESSION_NOT_FOUND', 'Session not found.');
     response.sendStatus(204);
+  });
+  app.post('/auth/email-verification/request', strictAuthLimit, validateBody(EmailVerificationRequestDto), async (_request, response) => {
+    await deps.auth.requestEmailVerification((response.locals.body as EmailVerificationRequestDto).email);
+    response.status(202).json({ accepted: true });
+  });
+  app.post('/auth/email-verification/consume', strictAuthLimit, validateBody(EmailVerificationConsumeDto), async (_request, response) => {
+    try { response.json(await deps.auth.consumeEmailVerification((response.locals.body as EmailVerificationConsumeDto).token)); }
+    catch (error) { if (error instanceof InvalidVerificationToken) throw new HttpError(400, 'INVALID_VERIFICATION_TOKEN', 'This verification link is invalid or expired.'); throw error; }
   });
   // Development plumbing only, never an unauthenticated production job interface.
   if (deps.nodeEnv !== 'production') {

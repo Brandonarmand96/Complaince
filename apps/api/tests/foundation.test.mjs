@@ -6,12 +6,13 @@ import { createApp } from '../dist/app.js';
 import { validateEnvironment } from '../dist/config/environment.js';
 import { assertTestResources } from '@complyos/runtime/testing';
 import { hashPassword, InvalidCredentials, issueAccessToken, verifyAccessToken, verifyPassword } from '@complyos/runtime/auth';
+import { createCaptureMailer } from '@complyos/runtime/mail';
 const authConfig = { accessSecret: 'test-secret-that-is-at-least-32-characters-long', issuer: 'test-issuer', audience: 'test-audience', accessTtlSeconds: 900, refreshTtlSeconds: 3600 };
 function fixture(overrides = {}) {
   const entries = [];
   const logger = pino(new Writable({ write(chunk, _encoding, callback) { entries.push(JSON.parse(chunk.toString())); callback(); } }));
   const authResult = { accessToken: 'access', refreshToken: 'refresh-token-value-long-enough', expiresIn: 900, user: { id: 'user-id', email: 'owner@example.com', displayName: 'Owner' } };
-  const deps = { checkDatabase: jest.fn().mockResolvedValue(undefined), checkRedis: jest.fn().mockResolvedValue(undefined), submitJob: jest.fn().mockResolvedValue({ id: 'id', label: 'Check', status: 'QUEUED', attempts: 0, lastError: null }), listJobs: jest.fn().mockResolvedValue({ data: [], page: 1, limit: 20, total: 0 }), webOrigin: 'http://127.0.0.1:5173', nodeEnv: 'test', logger, authConfig, auth: { register: jest.fn().mockResolvedValue(authResult), login: jest.fn().mockResolvedValue(authResult), refresh: jest.fn().mockResolvedValue(authResult), logout: jest.fn().mockResolvedValue(undefined), me: jest.fn().mockResolvedValue({ ...authResult.user, memberships: [] }), sessions: jest.fn().mockResolvedValue([]), revokeSession: jest.fn().mockResolvedValue(true) }, ...overrides };
+  const deps = { checkDatabase: jest.fn().mockResolvedValue(undefined), checkRedis: jest.fn().mockResolvedValue(undefined), submitJob: jest.fn().mockResolvedValue({ id: 'id', label: 'Check', status: 'QUEUED', attempts: 0, lastError: null }), listJobs: jest.fn().mockResolvedValue({ data: [], page: 1, limit: 20, total: 0 }), webOrigin: 'http://127.0.0.1:5173', nodeEnv: 'test', logger, authConfig, auth: { register: jest.fn().mockResolvedValue(authResult), login: jest.fn().mockResolvedValue(authResult), refresh: jest.fn().mockResolvedValue(authResult), logout: jest.fn().mockResolvedValue(undefined), me: jest.fn().mockResolvedValue({ ...authResult.user, memberships: [] }), sessions: jest.fn().mockResolvedValue([]), revokeSession: jest.fn().mockResolvedValue(true), validateAccess: jest.fn().mockResolvedValue(undefined), requestEmailVerification: jest.fn().mockResolvedValue(undefined), consumeEmailVerification: jest.fn().mockResolvedValue({ verified: true }) }, ...overrides };
   return { app: createApp(deps), deps, entries };
 }
 describe('foundation API', () => {
@@ -143,5 +144,16 @@ describe('authentication foundation', () => {
     expect((await request(app).get('/auth/sessions').set(authorization)).status).toBe(200);
     deps.auth.revokeSession.mockResolvedValueOnce(false);
     expect((await request(app).delete('/auth/sessions/22222222-2222-4222-8222-222222222222').set(authorization)).status).toBe(404);
+  });
+  it('rate limits repeated login attempts', async () => {
+    const { app } = fixture();
+    let response;
+    for (let attempt = 0; attempt < 11; attempt += 1) response = await request(app).post('/auth/login').send({ email: 'owner@example.com', password: 'password' });
+    expect(response.status).toBe(429);
+  });
+  it('uses an isolated capture mailer without contacting a recipient', async () => {
+    const mailer = createCaptureMailer();
+    await mailer.send({ to: 'person@example.com', subject: 'Verify', text: 'local activation link' });
+    expect(mailer.messages).toEqual([{ to: 'person@example.com', subject: 'Verify', text: 'local activation link' }]);
   });
 });

@@ -51,3 +51,14 @@ export class RefreshDto {
   @Length(20, 200)
   refreshToken!: string;
 }
+export class EmailVerificationRequestDto {
+  @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
+  @IsEmail()
+  @Length(3, 254)
+  email!: string;
+}
+export class EmailVerificationConsumeDto {
+  @IsString()
+  @Length(20, 200)
+  token!: string;
+}
