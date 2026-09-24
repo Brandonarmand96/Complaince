@@ -113,7 +113,16 @@ try {
   await assert.rejects(() => auth.login({ email: 'missing@example.com', password }), InvalidCredentials);
   await assert.rejects(() => auth.login({ email, password: 'wrong password' }), InvalidCredentials);
   const login = await auth.login({ email: email.toUpperCase(), password });
-  assert.equal((await verifyAccessToken(authConfig, login.accessToken)).userId, authUserId);
+  const loginIdentity = await verifyAccessToken(authConfig, login.accessToken);
+  assert.equal(loginIdentity.userId, authUserId);
+  const profile = await auth.me(loginIdentity.userId, loginIdentity.sessionId);
+  assert.equal(profile.memberships[0].organizationId, authOrganizationId);
+  assert.deepEqual(profile.memberships[0].roles, ['Organization Owner']);
+  assert.ok((await auth.sessions(authUserId)).length >= 2);
+  assert.equal(await auth.revokeSession(authUserId, randomUUID()), false);
+  const registrationIdentity = await verifyAccessToken(authConfig, registration.accessToken);
+  await auth.logout(registration.refreshToken);
+  assert.ok((await auth.sessions(authUserId)).every(session => session.id !== registrationIdentity.sessionId));
   const storedTokens = await db.query('SELECT "tokenHash" FROM "RefreshToken" t JOIN "RefreshTokenFamily" f ON f."id" = t."familyId" WHERE f."userId" = $1', [authUserId]);
   assert.ok(storedTokens.rows.every(row => /^[a-f0-9]{64}$/.test(row.tokenHash) && row.tokenHash !== login.refreshToken));
   const rotated = await auth.refresh(login.refreshToken);

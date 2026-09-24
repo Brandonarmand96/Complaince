@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { DataProvider } from './lib/query';
 import { AppErrorBoundary } from './components/shared/AsyncState';
+import { AuthProvider } from './lib/auth';
 import './globals.css';
 
 const container = document.getElementById('root');
@@ -13,6 +14,6 @@ if (!container) {
 
 createRoot(container).render(
   <StrictMode>
-    <AppErrorBoundary><DataProvider><App /></DataProvider></AppErrorBoundary>
+    <AppErrorBoundary><DataProvider><AuthProvider><App /></AuthProvider></DataProvider></AppErrorBoundary>
   </StrictMode>,
 );

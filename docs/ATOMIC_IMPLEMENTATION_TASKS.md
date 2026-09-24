@@ -142,16 +142,16 @@ Roadmap reference: B01–B06.
 | [x] | T0048 | Add refresh-token-family storage. | Completed: families and individual token generations store expiry/revocation state; only SHA-256 hashes of 256-bit opaque secrets are persisted. Live storage assertions pass. | T0047 |
 | [x] | T0049 | Add POST /auth/refresh with rotation. | Completed: refresh consumes the current generation and creates the next transactionally. Live replay of an old token persisted family-wide revocation and invalidated its newer sibling. | T0048 |
 | [x] | T0050 | Add authenticated request middleware. | Completed: bearer middleware verifies constrained JWTs and places `{ userId, tokenId }` in request-local state. Protected-route tests cover missing, invalid and valid credentials. | T0049 |
-| [ ] | T0051 | Add POST /auth/logout. | The current refresh session is revoked. | T0050 |
-| [ ] | T0052 | Add GET /auth/me. | The response contains allowed identity/membership fields only. | T0051 |
-| [ ] | T0053 | Build the registration form. | Successful submission opens the correct next onboarding step. | T0052 |
-| [ ] | T0054 | Build the login form. | It handles invalid credentials and successful login. | T0053 |
-| [ ] | T0055 | Add client session bootstrap and expired-session handling. | Reload restores a valid session; an expired one returns to login. | T0054 |
-| [ ] | T0056 | Add refresh-cookie development/production configuration. | HttpOnly and SameSite settings are explicit; secure transport is required outside local development. | T0055 |
-| [ ] | T0057 | Add the Session model's device/IP/last-seen fields. | Session metadata is recorded without storing raw secrets. | T0056 |
-| [ ] | T0058 | Add GET /auth/sessions. | A user sees only their sessions. | T0057 |
-| [ ] | T0059 | Add DELETE /auth/sessions/:id. | Revoking another user's session is rejected. | T0058 |
-| [ ] | T0060 | Build the active-session list with revoke action. | A revoked session disappears after server confirmation. | T0059 |
+| [x] | T0051 | Add POST /auth/logout. | Completed: logout hashes the current cookie secret to revoke only its refresh family, clears the cookie and returns 204. Live integration proved the session disappears. | T0050 |
+| [x] | T0052 | Add GET /auth/me. | Completed: the protected projection returns only ID, normalized email, display name and scoped membership/organization/role fields; live integration verified the owner membership. | T0051 |
+| [x] | T0053 | Build the registration form. | Completed: the responsive workspace-creation form maps client/server field errors, shows progress and enters the protected dashboard after the transactional registration succeeds. | T0052 |
+| [x] | T0054 | Build the login form. | Completed: the accessible responsive form presents generic credential failures, loading state and successful protected navigation. Desktop/mobile browser tests pass. | T0053 |
+| [x] | T0055 | Add client session bootstrap and expired-session handling. | Completed: `AuthProvider` silently rotates the HttpOnly refresh cookie on reload, restores `/auth/me`, gates the app shell and redirects expired sessions to login. Browser tests cover both states. | T0054 |
+| [x] | T0056 | Add refresh-cookie development/production configuration. | Completed: refresh secrets leave JSON responses and use an HttpOnly, SameSite=Lax, `/auth`-scoped cookie; Secure is mandatory in production and credentialed CORS is explicit. API tests inspect attributes. | T0055 |
+| [x] | T0057 | Add the Session model's device/IP/last-seen fields. | Completed: refresh families are the session boundary and store nullable IP/user-agent plus last-seen/created/expiry timestamps; raw refresh secrets remain hash-only. | T0056 |
+| [x] | T0058 | Add GET /auth/sessions. | Completed: the protected query filters by authenticated user, active/nonexpired state and bounded session fields. Live and route tests pass. | T0057 |
+| [x] | T0059 | Add DELETE /auth/sessions/:id. | Completed: revocation requires a valid bearer identity and updates only a matching user/session pair; foreign or absent IDs return 404. Tests pass. | T0058 |
+| [x] | T0060 | Build the active-session list with revoke action. | Completed: the responsive list shows browser, address and last activity, includes loading/error/empty states, and removes a session only after confirmed 204. Desktop/mobile tests pass. | T0059 |
 | [ ] | T0061 | Add failed-login counters and lockout expiry. | Repeated failed login blocks attempts until the defined reset condition. | T0060 |
 | [ ] | T0062 | Add authentication route rate limiting. | Excessive attempts return 429. | T0061 |
 | [ ] | T0063 | Add inactive/locked/suspended-account checks. | Existing tokens cannot bypass a changed account status. | T0062 |

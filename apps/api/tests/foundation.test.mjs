@@ -11,7 +11,7 @@ function fixture(overrides = {}) {
   const entries = [];
   const logger = pino(new Writable({ write(chunk, _encoding, callback) { entries.push(JSON.parse(chunk.toString())); callback(); } }));
   const authResult = { accessToken: 'access', refreshToken: 'refresh-token-value-long-enough', expiresIn: 900, user: { id: 'user-id', email: 'owner@example.com', displayName: 'Owner' } };
-  const deps = { checkDatabase: jest.fn().mockResolvedValue(undefined), checkRedis: jest.fn().mockResolvedValue(undefined), submitJob: jest.fn().mockResolvedValue({ id: 'id', label: 'Check', status: 'QUEUED', attempts: 0, lastError: null }), listJobs: jest.fn().mockResolvedValue({ data: [], page: 1, limit: 20, total: 0 }), webOrigin: 'http://127.0.0.1:5173', nodeEnv: 'test', logger, authConfig, auth: { register: jest.fn().mockResolvedValue(authResult), login: jest.fn().mockResolvedValue(authResult), refresh: jest.fn().mockResolvedValue(authResult) }, ...overrides };
+  const deps = { checkDatabase: jest.fn().mockResolvedValue(undefined), checkRedis: jest.fn().mockResolvedValue(undefined), submitJob: jest.fn().mockResolvedValue({ id: 'id', label: 'Check', status: 'QUEUED', attempts: 0, lastError: null }), listJobs: jest.fn().mockResolvedValue({ data: [], page: 1, limit: 20, total: 0 }), webOrigin: 'http://127.0.0.1:5173', nodeEnv: 'test', logger, authConfig, auth: { register: jest.fn().mockResolvedValue(authResult), login: jest.fn().mockResolvedValue(authResult), refresh: jest.fn().mockResolvedValue(authResult), logout: jest.fn().mockResolvedValue(undefined), me: jest.fn().mockResolvedValue({ ...authResult.user, memberships: [] }), sessions: jest.fn().mockResolvedValue([]), revokeSession: jest.fn().mockResolvedValue(true) }, ...overrides };
   return { app: createApp(deps), deps, entries };
 }
 describe('foundation API', () => {
@@ -121,6 +121,8 @@ describe('authentication foundation', () => {
     expect(deps.auth.register).not.toHaveBeenCalled();
     const registered = await request(app).post('/auth/register').send({ email: 'Owner@Example.com', password: 'correct horse battery staple', displayName: 'Owner', organizationName: 'Example' });
     expect(registered.status).toBe(201);
+    expect(registered.body).not.toHaveProperty('refreshToken');
+    expect(registered.headers['set-cookie'][0]).toMatch(/complyos_refresh=.*HttpOnly.*SameSite=Lax/);
     const failing = fixture({ auth: { ...deps.auth, login: jest.fn().mockRejectedValue(new InvalidCredentials()) } });
     const login = await request(failing.app).post('/auth/login').send({ email: 'unknown@example.com', password: 'any password' });
     expect(login.status).toBe(401);
@@ -130,5 +132,16 @@ describe('authentication foundation', () => {
     const verified = await request(app).get('/auth/verify').set('Authorization', `Bearer ${token}`);
     expect(verified.status).toBe(200);
     expect(verified.body.userId).toBe('user-id');
+  });
+  it('projects the current user and restricts session revocation to the caller', async () => {
+    const { app, deps } = fixture();
+    const token = await issueAccessToken(authConfig, 'user-id', '11111111-1111-4111-8111-111111111111');
+    const authorization = { Authorization: `Bearer ${token}` };
+    const me = await request(app).get('/auth/me').set(authorization);
+    expect(me.status).toBe(200);
+    expect(deps.auth.me).toHaveBeenCalledWith('user-id', '11111111-1111-4111-8111-111111111111');
+    expect((await request(app).get('/auth/sessions').set(authorization)).status).toBe(200);
+    deps.auth.revokeSession.mockResolvedValueOnce(false);
+    expect((await request(app).delete('/auth/sessions/22222222-2222-4222-8222-222222222222').set(authorization)).status).toBe(404);
   });
 });

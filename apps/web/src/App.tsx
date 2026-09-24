@@ -3,15 +3,21 @@ import { AppShell } from '@/components/layout/AppShell';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { navSections } from '@/components/layout/sidebar';
+import { AuthPage } from '@/pages/AuthPage';
+import { SessionsPage } from '@/pages/SessionsPage';
+import { useAuth } from '@/lib/auth';
+function ProtectedShell() { const { user, loading } = useAuth(); if (loading) return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Restoring your session…</div>; return user ? <AppShell /> : <Navigate to="/login" replace />; }
 
 export function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
-        {/* Session enforcement is added with authentication. This shell contains no tenant data. */}
-        <Route element={<AppShell />}>
+        <Route path="login" element={<AuthPage mode="login" />} />
+        <Route path="register" element={<AuthPage mode="register" />} />
+        <Route element={<ProtectedShell />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="settings/sessions" element={<SessionsPage />} />
           {navSections.flatMap((section) => section.items)
             .filter((item) => item.href !== '/dashboard')
             .map((item) => (

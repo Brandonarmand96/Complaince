@@ -25,8 +25,8 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   try {
     const headers = new Headers(options.headers);
     if (options.body) headers.set('Content-Type', 'application/json');
-    const response = await fetch(apiBase() + path, { ...options, headers, signal: controller.signal });
-    const body: unknown = await response.json().catch(() => null);
+    const response = await fetch(apiBase() + path, { credentials: 'include', ...options, headers, signal: controller.signal });
+    const body: unknown = response.status === 204 ? undefined : await response.json().catch(() => null);
     if (!response.ok) {
       if (isErrorResponse(body)) throw new ApiError(response.status, body.error.code, body.error.message, body.error.fields, body.requestId);
       throw new ApiError(response.status, 'HTTP_ERROR', response.status === 503 ? 'A required service is unavailable. Check PostgreSQL and Redis, then retry.' : 'The request failed. Please retry.');
