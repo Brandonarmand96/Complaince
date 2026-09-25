@@ -12,7 +12,7 @@ function fixture(overrides = {}) {
   const entries = [];
   const logger = pino(new Writable({ write(chunk, _encoding, callback) { entries.push(JSON.parse(chunk.toString())); callback(); } }));
   const authResult = { accessToken: 'access', refreshToken: 'refresh-token-value-long-enough', expiresIn: 900, user: { id: 'user-id', email: 'owner@example.com', displayName: 'Owner' } };
-  const deps = { checkDatabase: jest.fn().mockResolvedValue(undefined), checkRedis: jest.fn().mockResolvedValue(undefined), submitJob: jest.fn().mockResolvedValue({ id: 'id', label: 'Check', status: 'QUEUED', attempts: 0, lastError: null }), listJobs: jest.fn().mockResolvedValue({ data: [], page: 1, limit: 20, total: 0 }), webOrigin: 'http://127.0.0.1:5173', nodeEnv: 'test', logger, authConfig, auth: { register: jest.fn().mockResolvedValue(authResult), login: jest.fn().mockResolvedValue(authResult), refresh: jest.fn().mockResolvedValue(authResult), logout: jest.fn().mockResolvedValue(undefined), me: jest.fn().mockResolvedValue({ ...authResult.user, memberships: [] }), sessions: jest.fn().mockResolvedValue([]), revokeSession: jest.fn().mockResolvedValue(true), validateAccess: jest.fn().mockResolvedValue(undefined), requestEmailVerification: jest.fn().mockResolvedValue(undefined), consumeEmailVerification: jest.fn().mockResolvedValue({ verified: true }) }, ...overrides };
+  const deps = { checkDatabase: jest.fn().mockResolvedValue(undefined), checkRedis: jest.fn().mockResolvedValue(undefined), submitJob: jest.fn().mockResolvedValue({ id: 'id', label: 'Check', status: 'QUEUED', attempts: 0, lastError: null }), listJobs: jest.fn().mockResolvedValue({ data: [], page: 1, limit: 20, total: 0 }), webOrigin: 'http://127.0.0.1:5173', nodeEnv: 'test', logger, authConfig, auth: { register: jest.fn().mockResolvedValue(authResult), login: jest.fn().mockResolvedValue(authResult), refresh: jest.fn().mockResolvedValue(authResult), logout: jest.fn().mockResolvedValue(undefined), me: jest.fn().mockResolvedValue({ ...authResult.user, memberships: [] }), sessions: jest.fn().mockResolvedValue([]), revokeSession: jest.fn().mockResolvedValue(true), validateAccess: jest.fn().mockResolvedValue(undefined), requestEmailVerification: jest.fn().mockResolvedValue(undefined), consumeEmailVerification: jest.fn().mockResolvedValue({ verified: true }), requestPasswordReset: jest.fn().mockResolvedValue(undefined), completePasswordReset: jest.fn().mockResolvedValue({ reset: true }), assignableRoles: jest.fn().mockResolvedValue([{ id: '33333333-3333-4333-8333-333333333333', name: 'Employee' }]), createInvitation: jest.fn().mockResolvedValue({ id: '44444444-4444-4444-8444-444444444444', status: 'PENDING' }), resendInvitation: jest.fn().mockResolvedValue({ resent: true }), acceptInvitation: jest.fn().mockResolvedValue({ accepted: true }), invitationDetails: jest.fn().mockResolvedValue({ email: 'invitee@example.com', organizationName: 'Acme', accountExists: false }), acceptNewInvitation: jest.fn().mockResolvedValue(authResult), completeMfaChallenge: jest.fn().mockResolvedValue(authResult), switchOrganization: jest.fn().mockResolvedValue({ accessToken: 'new-access', expiresIn: 900, activeOrganizationId: '11111111-1111-4111-8111-111111111111' }) }, security: { transitionUserStatus: jest.fn().mockResolvedValue({ status: 'SUSPENDED' }), beginMfaEnrollment: jest.fn().mockResolvedValue({ secret: 'BASE32SECRET', otpauthUri: 'otpauth://test' }), confirmMfaEnrollment: jest.fn().mockResolvedValue({ enabled: true, recoveryCodes: ['ABCDE-12345'] }), requestMfaReset: jest.fn().mockResolvedValue({ id: 'request-id', status: 'PENDING' }), approveMfaReset: jest.fn().mockResolvedValue({ approved: true }) }, ...overrides };
   return { app: createApp(deps), deps, entries };
 }
 describe('foundation API', () => {
@@ -150,6 +150,36 @@ describe('authentication foundation', () => {
     let response;
     for (let attempt = 0; attempt < 11; attempt += 1) response = await request(app).post('/auth/login').send({ email: 'owner@example.com', password: 'password' });
     expect(response.status).toBe(429);
+  });
+  it('keeps password-reset requests neutral and completes a valid reset', async () => {
+    const { app, deps } = fixture();
+    expect((await request(app).post('/auth/password-reset/request').send({ email: 'unknown@example.com' })).status).toBe(202);
+    expect(deps.auth.requestPasswordReset).toHaveBeenCalledWith('unknown@example.com');
+    expect((await request(app).post('/auth/password-reset/complete').send({ token: 'a-valid-reset-token-that-is-long', password: 'a new secure passphrase' })).body).toEqual({ reset: true });
+  });
+  it('limits invitation roles to the authenticated inviter', async () => {
+    const { app, deps } = fixture();
+    const token = await issueAccessToken(authConfig, 'user-id');
+    const authorization = { Authorization: `Bearer ${token}` };
+    const organizationId = '11111111-1111-4111-8111-111111111111';
+    expect((await request(app).get(`/invitations/roles?organizationId=${organizationId}`).set(authorization)).status).toBe(200);
+    const payload = { organizationId, email: 'invitee@example.com', roleIds: ['33333333-3333-4333-8333-333333333333'] };
+    expect((await request(app).post('/invitations').set(authorization).send(payload)).status).toBe(201);
+    expect(deps.auth.createInvitation).toHaveBeenCalledWith('user-id', payload);
+  });
+  it('keeps MFA enrollment pending, confirms it, and challenges login before issuing access', async () => {
+    const { app, deps } = fixture({ auth: { ...fixture().deps.auth, login: jest.fn().mockResolvedValue({ mfaRequired: true, challengeToken: 'challenge-token-long-enough-value', expiresIn: 300 }) } });
+    const login = await request(app).post('/auth/login').send({ email: 'owner@example.com', password: 'correct horse battery staple' });
+    expect(login.body.mfaRequired).toBe(true); expect(login.headers['set-cookie']).toBeUndefined();
+    const challenged = await request(app).post('/auth/mfa/challenge').send({ challengeToken: 'challenge-token-long-enough-value', code: '123456' });
+    expect(challenged.status).toBe(200); expect(deps.auth.completeMfaChallenge).toHaveBeenCalled();
+  });
+  it('switches organization only through the verified session and supports status transitions', async () => {
+    const { app, deps } = fixture(); const token = await issueAccessToken(authConfig, 'user-id', '11111111-1111-4111-8111-111111111111'); const authorization = { Authorization: `Bearer ${token}` };
+    const organizationId = '22222222-2222-4222-8222-222222222222';
+    expect((await request(app).post('/auth/switch-organization').set(authorization).send({ organizationId })).status).toBe(200);
+    expect(deps.auth.switchOrganization).toHaveBeenCalledWith('user-id', '11111111-1111-4111-8111-111111111111', organizationId);
+    expect((await request(app).post('/users/33333333-3333-4333-8333-333333333333/status').set(authorization).send({ organizationId, status: 'SUSPENDED' })).status).toBe(200);
   });
   it('uses an isolated capture mailer without contacting a recipient', async () => {
     const mailer = createCaptureMailer();

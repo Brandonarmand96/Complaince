@@ -169,28 +169,28 @@ Roadmap reference: B04–B06.
 | [x] | T0068 | Add one-use email-verification token storage. | Completed: verification records store only SHA-256 token hash, user, expiry, consumption and creation timestamps. Live assertions prove the raw secret is absent. | T0067 |
 | [x] | T0069 | Add the email-verification request action. | Completed: the neutral 202 action invalidates prior outstanding tokens and sends the activation URL through the configured local mailer; unknown/already-verified email remains neutral. Capture test passes. | T0068 |
 | [x] | T0070 | Add the email-verification consume action. | Completed: transactional consumption marks the token and user verified exactly once; live tests reject expired and reused secrets. | T0069 |
-| [ ] | T0071 | Build the verification-result page. | It shows success or a recoverable expired-token state. | T0070 |
-| [ ] | T0072 | Add password-reset request action. | It returns the same public result for known and unknown emails. | T0071 |
-| [ ] | T0073 | Add password-reset completion action. | A successful reset revokes previous sessions and consumes the token. | T0072 |
-| [ ] | T0074 | Build reset-request form. | Valid input sends one request and displays the neutral confirmation. | T0073 |
-| [ ] | T0075 | Build new-password form. | Token errors and password-policy errors appear inline. | T0074 |
-| [ ] | T0076 | Add Invitation model with tenant, role grants, expiry and status. | An invite cannot refer to a role outside its organization. | T0075 |
-| [ ] | T0077 | Add POST /invitations. | Only a permitted inviter can select allowed roles. | T0076 |
-| [ ] | T0078 | Add invitation resend action. | Resending invalidates the prior token. | T0077 |
-| [ ] | T0079 | Add invitation acceptance action. | The user joins only the invited organization with the intended grants. | T0078 |
-| [ ] | T0080 | Build invite-user form. | It displays only roles the inviter can assign. | T0079 |
-| [ ] | T0081 | Build invitation-acceptance page. | It handles existing and new identities without duplicate memberships. | T0080 |
-| [ ] | T0082 | Add user-status transition action. | Invalid transitions among the specified statuses are rejected. | T0081 |
-| [ ] | T0083 | Add encrypted TOTP secret storage and enrollment action. | Enrollment returns setup data without marking MFA active. | T0082 |
-| [ ] | T0084 | Add TOTP enrollment confirmation. | MFA activates only after a valid code. | T0083 |
-| [ ] | T0085 | Add MFA challenge after password login. | Protected access is unavailable before a successful challenge. | T0084 |
-| [ ] | T0086 | Generate and store hashed recovery codes. | Each code works only once. | T0085 |
-| [ ] | T0087 | Build MFA setup screen. | The user can confirm enrollment and save recovery codes. | T0086 |
-| [ ] | T0088 | Build MFA challenge screen. | A valid TOTP or unused recovery code completes login. | T0087 |
-| [ ] | T0089 | Add MFA reset-request endpoint. | It creates a pending request and grants no bypass by itself. | T0088 |
-| [ ] | T0090 | Add MFA reset-approval endpoint. | Only the designated approver can reset enrollment; existing sessions are revoked. | T0089 |
-| [ ] | T0091 | Enforce organization password-length/complexity settings. | Registration/reset reject passwords outside the effective policy. | T0090 |
-| [ ] | T0092 | Add a password-breach-check interface and local fixture implementation. | Known-compromised fixture passwords fail; provider unavailability follows a documented policy. | T0091 |
+| [x] | T0071 | Build the verification-result page. | It shows success or a recoverable expired-token state. | T0070 |
+| [x] | T0072 | Add password-reset request action. | It returns the same public result for known and unknown emails. | T0071 |
+| [x] | T0073 | Add password-reset completion action. | A successful reset revokes previous sessions and consumes the token. | T0072 |
+| [x] | T0074 | Build reset-request form. | Valid input sends one request and displays the neutral confirmation. | T0073 |
+| [x] | T0075 | Build new-password form. | Token errors and password-policy errors appear inline. | T0074 |
+| [x] | T0076 | Add Invitation model with tenant, role grants, expiry and status. | An invite cannot refer to a role outside its organization. | T0075 |
+| [x] | T0077 | Add POST /invitations. | Only a permitted inviter can select allowed roles. | T0076 |
+| [x] | T0078 | Add invitation resend action. | Resending invalidates the prior token. | T0077 |
+| [x] | T0079 | Add invitation acceptance action. | The user joins only the invited organization with the intended grants. | T0078 |
+| [x] | T0080 | Build invite-user form. | It displays only roles the inviter can assign. | T0079 |
+| [x] | T0081 | Build invitation-acceptance page. | It handles existing and new identities without duplicate memberships. | T0080 |
+| [x] | T0082 | Add user-status transition action. | Invalid transitions among the specified statuses are rejected. | T0081 |
+| [x] | T0083 | Add encrypted TOTP secret storage and enrollment action. | Enrollment returns setup data without marking MFA active. | T0082 |
+| [x] | T0084 | Add TOTP enrollment confirmation. | MFA activates only after a valid code. | T0083 |
+| [x] | T0085 | Add MFA challenge after password login. | Protected access is unavailable before a successful challenge. | T0084 |
+| [x] | T0086 | Generate and store hashed recovery codes. | Each code works only once. | T0085 |
+| [x] | T0087 | Build MFA setup screen. | The user can confirm enrollment and save recovery codes. | T0086 |
+| [x] | T0088 | Build MFA challenge screen. | A valid TOTP or unused recovery code completes login. | T0087 |
+| [x] | T0089 | Add MFA reset-request endpoint. | It creates a pending request and grants no bypass by itself. | T0088 |
+| [x] | T0090 | Add MFA reset-approval endpoint. | Only the designated approver can reset enrollment; existing sessions are revoked. | T0089 |
+| [x] | T0091 | Enforce organization password-length/complexity settings. | Registration/reset reject passwords outside the effective policy. | T0090 |
+| [x] | T0092 | Add a password-breach-check interface and local fixture implementation. | Known-compromised fixture passwords fail; provider unavailability follows a documented policy. | T0091 |
 
 ### 04. Tenant and permission enforcement
 
@@ -198,14 +198,14 @@ Roadmap reference: B07–B08, B11–B12.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0093 | Resolve active organization from a verified session membership. | An arbitrary body organizationId never becomes tenant context. | T0092 |
-| [ ] | T0094 | Add POST /auth/switch-organization. | Switching requires an active membership and updates the session context. | T0093 |
-| [ ] | T0095 | Build the organization switcher. | Only authorized organizations appear. | T0094 |
-| [ ] | T0096 | Add a tenant-scoped repository base helper. | A tenant query cannot be called without a tenant context. | T0095 |
-| [ ] | T0097 | Add the permission-check helper. | Missing permissions return 403 before mutation. | T0096 |
-| [ ] | T0098 | Add owner and department-scope policy helpers. | Permission alone cannot bypass record scope. | T0097 |
-| [ ] | T0099 | Add explicit vendor/auditor field projection helpers. | Internal-only fields are absent, not merely hidden by the UI. | T0098 |
-| [ ] | T0100 | Add a two-tenant ID-substitution integration test. | Tenant A cannot fetch or modify tenant B's sample record. | T0099 |
+| [x] | T0093 | Resolve active organization from a verified session membership. | An arbitrary body organizationId never becomes tenant context. | T0092 |
+| [x] | T0094 | Add POST /auth/switch-organization. | Switching requires an active membership and updates the session context. | T0093 |
+| [x] | T0095 | Build the organization switcher. | Only authorized organizations appear. | T0094 |
+| [x] | T0096 | Add a tenant-scoped repository base helper. | A tenant query cannot be called without a tenant context. | T0095 |
+| [x] | T0097 | Add the permission-check helper. | Missing permissions return 403 before mutation. | T0096 |
+| [x] | T0098 | Add owner and department-scope policy helpers. | Permission alone cannot bypass record scope. | T0097 |
+| [x] | T0099 | Add explicit vendor/auditor field projection helpers. | Internal-only fields are absent, not merely hidden by the UI. | T0098 |
+| [x] | T0100 | Add a two-tenant ID-substitution integration test. | Tenant A cannot fetch or modify tenant B's sample record. | T0099 |
 | [ ] | T0101 | Add ConsultingClientGrant model. | Parent organization membership does not imply client access. | T0100 |
 | [ ] | T0102 | Add the client-access grant action. | Only authorized client grants allow organization switching. | T0101 |
 | [ ] | T0103 | Add SupportAccessRequest model with resources and expiration. | A request confers no access by itself. | T0102 |

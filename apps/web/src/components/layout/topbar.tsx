@@ -1,6 +1,7 @@
 import { Search, Bell, HelpCircle } from 'lucide-react';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import { OrganizationSwitcher } from './OrganizationSwitcher';
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': { title: 'Dashboard', subtitle: 'Compliance posture overview' },
@@ -38,6 +39,7 @@ export function Topbar() {
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2">
+        <OrganizationSwitcher />
         <div className="relative hidden xl:block">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input

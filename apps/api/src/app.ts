@@ -4,9 +4,11 @@ import swaggerUi from 'swagger-ui-express';
 import type { HealthResponse, JobSummary, PageResult } from '@complyos/contracts';
 import { createLogger } from '@complyos/runtime/logger';
 import { IdempotencyConflict, type HealthInput, type JobPage } from '@complyos/runtime/jobs';
-import { AccountUnavailable, EmailAlreadyRegistered, InvalidCredentials, InvalidRefreshToken, InvalidVerificationToken, type AuthConfig, type AuthResult } from '@complyos/runtime/auth';
+import { AccountUnavailable, EmailAlreadyRegistered, InvalidCredentials, InvalidInvitationToken, InvalidPasswordResetToken, InvalidRefreshToken, InvalidVerificationToken, InvitationForbidden, type AuthConfig, type AuthResult, type MfaRequiredResult } from '@complyos/runtime/auth';
+import { SecurityPolicyError } from '@complyos/runtime/security';
+import { TenantAccessDenied } from '@complyos/runtime/authorization';
 import { authenticateAccessToken, createRateLimiter, HttpError, errorHandler, parseJobQuery, requestLogging, validateBody } from './http.js';
-import { EmailVerificationConsumeDto, EmailVerificationRequestDto, HealthJobDto, LoginDto, RefreshDto, RegisterDto } from './dto.js';
+import { EmailVerificationConsumeDto, EmailVerificationRequestDto, HealthJobDto, InvitationAcceptDto, InvitationAcceptNewDto, InvitationCreateDto, LoginDto, MfaChallengeDto, MfaCodeDto, MfaResetRequestDto, PasswordResetCompleteDto, PasswordResetRequestDto, RefreshDto, RegisterDto, SwitchOrganizationDto, UserStatusDto } from './dto.js';
 import { openapi } from './openapi.js';
 export interface AppDependencies {
   checkDatabase: () => Promise<unknown>;
@@ -18,7 +20,7 @@ export interface AppDependencies {
   authConfig: AuthConfig;
   auth: {
     register: (input: RegisterDto, context?: { ipAddress?: string; userAgent?: string }) => Promise<AuthResult>;
-    login: (input: LoginDto, context?: { ipAddress?: string; userAgent?: string }) => Promise<AuthResult>;
+    login: (input: LoginDto, context?: { ipAddress?: string; userAgent?: string }) => Promise<AuthResult | MfaRequiredResult>;
     refresh: (token: string) => Promise<AuthResult>;
     logout: (token: string) => Promise<void>;
     me: (userId: string, sessionId: string) => Promise<unknown>;
@@ -27,6 +29,23 @@ export interface AppDependencies {
     validateAccess: (userId: string, sessionId: string) => Promise<void>;
     requestEmailVerification: (email: string) => Promise<void>;
     consumeEmailVerification: (token: string) => Promise<{ verified: true }>;
+    requestPasswordReset: (email: string) => Promise<void>;
+    completePasswordReset: (token: string, password: string) => Promise<{ reset: true }>;
+    assignableRoles: (userId: string, organizationId: string) => Promise<unknown[]>;
+    createInvitation: (userId: string, input: InvitationCreateDto) => Promise<unknown>;
+    resendInvitation: (userId: string, invitationId: string) => Promise<{ resent: true }>;
+    acceptInvitation: (userId: string, token: string) => Promise<unknown>;
+    invitationDetails: (token: string) => Promise<unknown>;
+    acceptNewInvitation: (token: string, input: { displayName: string; password: string }, context?: { ipAddress?: string; userAgent?: string }) => Promise<AuthResult>;
+    completeMfaChallenge: (challengeToken: string, code: string, context?: { ipAddress?: string; userAgent?: string }) => Promise<AuthResult>;
+    switchOrganization: (userId: string, sessionId: string, organizationId: string) => Promise<{ accessToken: string; expiresIn: number; activeOrganizationId: string }>;
+  };
+  security: {
+    transitionUserStatus: (actorUserId: string, organizationId: string, targetUserId: string, status: string) => Promise<unknown>;
+    beginMfaEnrollment: (userId: string, email: string) => Promise<unknown>;
+    confirmMfaEnrollment: (userId: string, code: string) => Promise<unknown>;
+    requestMfaReset: (userId: string, organizationId: string) => Promise<unknown>;
+    approveMfaReset: (userId: string, requestId: string) => Promise<unknown>;
   };
   logger?: ReturnType<typeof createLogger>;
 }
@@ -85,12 +104,18 @@ export function createApp(deps: AppDependencies) {
     }
   });
   app.post('/auth/login', authLimit, validateBody(LoginDto), async (request, response) => {
-    try { sendAuth(response, await deps.auth.login(response.locals.body as LoginDto, requestContext(request))); }
+    try { const result = await deps.auth.login(response.locals.body as LoginDto, requestContext(request)); if ('mfaRequired' in result) response.json(result); else sendAuth(response, result); }
     catch (error) {
       if (error instanceof InvalidCredentials || error instanceof AccountUnavailable) throw new HttpError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect.');
       throw error;
     }
   });
+  app.post('/auth/mfa/challenge', strictAuthLimit, validateBody(MfaChallengeDto), async (request, response) => { const body = response.locals.body as MfaChallengeDto; try { sendAuth(response, await deps.auth.completeMfaChallenge(body.challengeToken, body.code, requestContext(request))); } catch (error) { if (error instanceof InvalidCredentials) throw new HttpError(401, 'INVALID_MFA_CODE', 'The authentication code is invalid or expired.'); throw error; } });
+  app.post('/auth/mfa/enroll', requireAuth, async (_request, response) => { const identity = response.locals.auth as { userId: string; sessionId: string }; const profile = await deps.auth.me(identity.userId, identity.sessionId); response.json(await deps.security.beginMfaEnrollment(identity.userId, (profile as { email: string }).email)); });
+  app.post('/auth/mfa/confirm', requireAuth, validateBody(MfaCodeDto), async (_request, response) => { try { response.json(await deps.security.confirmMfaEnrollment((response.locals.auth as { userId: string }).userId, (response.locals.body as MfaCodeDto).code)); } catch (error) { if (error instanceof SecurityPolicyError) throw new HttpError(400, 'INVALID_MFA_CODE', error.message); throw error; } });
+  app.post('/auth/mfa/reset-requests', requireAuth, validateBody(MfaResetRequestDto), async (_request, response) => { response.status(201).json(await deps.security.requestMfaReset((response.locals.auth as { userId: string }).userId, (response.locals.body as MfaResetRequestDto).organizationId)); });
+  app.post('/auth/mfa/reset-requests/:id/approve', requireAuth, async (request, response) => { try { response.json(await deps.security.approveMfaReset((response.locals.auth as { userId: string }).userId, String(request.params.id))); } catch (error) { if (error instanceof TenantAccessDenied) throw new HttpError(403, 'FORBIDDEN', 'Only the designated approver can approve this request.'); throw error; } });
+  app.post('/auth/switch-organization', requireAuth, validateBody(SwitchOrganizationDto), async (_request, response) => { const identity = response.locals.auth as { userId: string; sessionId: string }; try { response.json(await deps.auth.switchOrganization(identity.userId, identity.sessionId, (response.locals.body as SwitchOrganizationDto).organizationId)); } catch (error) { if (error instanceof InvitationForbidden) throw new HttpError(403, 'FORBIDDEN', 'An active membership is required.'); throw error; } });
   app.post('/auth/refresh', async (request, response) => {
     const token = refreshCookie(request) ?? (request.body as Partial<RefreshDto> | undefined)?.refreshToken;
     if (!token || typeof token !== 'string') throw new HttpError(401, 'INVALID_REFRESH_TOKEN', 'The refresh session is invalid or expired.');
@@ -130,6 +155,38 @@ export function createApp(deps: AppDependencies) {
     try { response.json(await deps.auth.consumeEmailVerification((response.locals.body as EmailVerificationConsumeDto).token)); }
     catch (error) { if (error instanceof InvalidVerificationToken) throw new HttpError(400, 'INVALID_VERIFICATION_TOKEN', 'This verification link is invalid or expired.'); throw error; }
   });
+  app.post('/auth/password-reset/request', strictAuthLimit, validateBody(PasswordResetRequestDto), async (_request, response) => {
+    await deps.auth.requestPasswordReset((response.locals.body as PasswordResetRequestDto).email);
+    response.status(202).json({ accepted: true });
+  });
+  app.post('/auth/password-reset/complete', strictAuthLimit, validateBody(PasswordResetCompleteDto), async (_request, response) => {
+    const body = response.locals.body as PasswordResetCompleteDto;
+    try { response.json(await deps.auth.completePasswordReset(body.token, body.password)); }
+    catch (error) { if (error instanceof InvalidPasswordResetToken) throw new HttpError(400, 'INVALID_PASSWORD_RESET_TOKEN', 'This reset link is invalid or expired.'); throw error; }
+  });
+  app.get('/invitations/roles', requireAuth, async (request, response) => {
+    const organizationId = typeof request.query.organizationId === 'string' ? request.query.organizationId : '';
+    if (!/^[0-9a-f-]{36}$/i.test(organizationId)) throw new HttpError(400, 'VALIDATION_ERROR', 'Organization ID is invalid.');
+    try { response.json(await deps.auth.assignableRoles((response.locals.auth as { userId: string }).userId, organizationId)); }
+    catch (error) { if (error instanceof InvitationForbidden) throw new HttpError(403, 'INVITATION_FORBIDDEN', 'You cannot invite users to this organization.'); throw error; }
+  });
+  app.post('/invitations', requireAuth, validateBody(InvitationCreateDto), async (_request, response) => {
+    try { response.status(201).json(await deps.auth.createInvitation((response.locals.auth as { userId: string }).userId, response.locals.body as InvitationCreateDto)); }
+    catch (error) { if (error instanceof InvitationForbidden) throw new HttpError(403, 'INVITATION_FORBIDDEN', 'One or more selected roles cannot be assigned.'); throw error; }
+  });
+  app.post('/invitations/:id/resend', requireAuth, async (request, response) => {
+    const id = Array.isArray(request.params.id) ? request.params.id[0] : request.params.id;
+    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) throw new HttpError(400, 'VALIDATION_ERROR', 'Invitation ID is invalid.');
+    try { response.json(await deps.auth.resendInvitation((response.locals.auth as { userId: string }).userId, id)); }
+    catch (error) { if (error instanceof InvitationForbidden) throw new HttpError(403, 'INVITATION_FORBIDDEN', 'You cannot resend this invitation.'); if (error instanceof InvalidInvitationToken) throw new HttpError(404, 'INVITATION_NOT_FOUND', 'Invitation not found.'); throw error; }
+  });
+  app.post('/invitations/accept', requireAuth, validateBody(InvitationAcceptDto), async (_request, response) => {
+    try { response.json(await deps.auth.acceptInvitation((response.locals.auth as { userId: string }).userId, (response.locals.body as InvitationAcceptDto).token)); }
+    catch (error) { if (error instanceof InvalidInvitationToken) throw new HttpError(400, 'INVALID_INVITATION_TOKEN', 'This invitation is invalid, expired, or intended for another account.'); throw error; }
+  });
+  app.post('/invitations/preview', strictAuthLimit, validateBody(InvitationAcceptDto), async (_request, response) => { try { response.json(await deps.auth.invitationDetails((response.locals.body as InvitationAcceptDto).token)); } catch (error) { if (error instanceof InvalidInvitationToken) throw new HttpError(400, 'INVALID_INVITATION_TOKEN', 'This invitation is invalid or expired.'); throw error; } });
+  app.post('/invitations/accept-new', strictAuthLimit, validateBody(InvitationAcceptNewDto), async (request, response) => { const body = response.locals.body as InvitationAcceptNewDto; try { sendAuth(response, await deps.auth.acceptNewInvitation(body.token, body, requestContext(request)), 201); } catch (error) { if (error instanceof InvalidInvitationToken) throw new HttpError(400, 'INVALID_INVITATION_TOKEN', 'This invitation is invalid or expired.'); if (error instanceof EmailAlreadyRegistered) throw new HttpError(409, 'ACCOUNT_EXISTS', 'Sign in to accept this invitation.'); if (error instanceof SecurityPolicyError) throw new HttpError(400, 'PASSWORD_POLICY', error.message); throw error; } });
+  app.post('/users/:id/status', requireAuth, validateBody(UserStatusDto), async (request, response) => { const body = response.locals.body as UserStatusDto; try { response.json(await deps.security.transitionUserStatus((response.locals.auth as { userId: string }).userId, body.organizationId, String(request.params.id), body.status)); } catch (error) { if (error instanceof TenantAccessDenied) throw new HttpError(403, 'FORBIDDEN', 'Permission is required.'); if (error instanceof SecurityPolicyError) throw new HttpError(409, 'INVALID_STATUS_TRANSITION', error.message); throw error; } });
   // Development plumbing only, never an unauthenticated production job interface.
   if (deps.nodeEnv !== 'production') {
     app.get('/api/v1/setup/jobs', async (request, response) => {

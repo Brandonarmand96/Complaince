@@ -102,6 +102,8 @@ Gate: a clean local setup starts web, API, worker, database and Redis; health ch
 | B11 | Implement consulting/client relationships and organization switcher with explicit client grants. | Consulting membership alone does not expose every client's records. |
 | B12 | Build platform administration: organization/account status, subscription records, template/library management, health and approved expiring support access. | Super administrator cannot download customer evidence without a valid approved grant. Local billing records require no payment processor. |
 
+**B06 breach-check availability policy:** If the breach-check provider is unavailable, password creation proceeds only after all locally enforceable organization password rules pass. A confirmed compromised result remains a hard rejection; provider unavailability must not be misreported as a successful breach check.
+
 Gate: two-tenant tests cover lists, detail reads, writes, joins, files, jobs and exports; role/scope denial tests pass. Infrastructure deferral does not waive this gate.
 
 ### Phase C — Shared workflow and history foundations

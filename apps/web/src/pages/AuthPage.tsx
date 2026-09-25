@@ -13,7 +13,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   if (auth.user) return <Navigate to="/dashboard" replace />;
   const submit = handleSubmit(async values => {
     setError('');
-    try { if (mode === 'login') await auth.login(values); else await auth.register(values); navigate('/dashboard', { replace: true }); }
+    try { if (mode === 'login') { const result = await auth.login(values); navigate(result === 'mfa' ? '/mfa-challenge' : '/dashboard', { replace: true }); } else { await auth.register(values); navigate('/dashboard', { replace: true }); } }
     catch (caught) {
       if (caught instanceof ApiError && caught.fields) for (const [field, messages] of Object.entries(caught.fields)) setFieldError(field as keyof Values, { message: messages[0] });
       setError(caught instanceof Error ? caught.message : 'Authentication failed. Please retry.');
@@ -28,7 +28,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       <p className="text-xs text-background/45">Local compliance workspace</p>
     </section>
     <section className="flex min-h-screen items-center justify-center px-6 py-12"><div className="w-full max-w-md"><div className="mb-10 flex items-center gap-3 font-semibold lg:hidden"><ShieldCheck className="h-6 w-6 text-primary" /> ComplyOS</div><h2 className="text-3xl font-semibold tracking-[-0.025em]">{isLogin ? 'Welcome back' : 'Create your workspace'}</h2><p className="mt-2 text-sm text-muted-foreground">{isLogin ? 'Sign in to continue your compliance work.' : 'Start with an owner account and your organization.'}</p>
-      <form className="mt-8 space-y-5" onSubmit={submit}>{!isLogin && field('displayName', 'Your name', 'text', 'name')}{!isLogin && field('organizationName', 'Organization name', 'text', 'organization')}{field('email', 'Work email', 'email', 'email')}{field('password', 'Password', 'password', isLogin ? 'current-password' : 'new-password')}{!isLogin && <p className="text-xs text-muted-foreground">Use at least 12 characters. A passphrase is easiest to remember.</p>}{error && <div role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}<Button className="h-11 w-full" disabled={isSubmitting}>{isSubmitting ? 'Please wait…' : isLogin ? 'Sign in' : 'Create workspace'}</Button></form>
+      <form className="mt-8 space-y-5" onSubmit={submit}>{!isLogin && field('displayName', 'Your name', 'text', 'name')}{!isLogin && field('organizationName', 'Organization name', 'text', 'organization')}{field('email', 'Work email', 'email', 'email')}{field('password', 'Password', 'password', isLogin ? 'current-password' : 'new-password')}{isLogin && <div className="-mt-3 text-right"><Link className="text-xs font-medium text-primary hover:underline" to="/forgot-password">Forgot password?</Link></div>}{!isLogin && <p className="text-xs text-muted-foreground">Use at least 12 characters. A passphrase is easiest to remember.</p>}{error && <div role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>}<Button className="h-11 w-full" disabled={isSubmitting}>{isSubmitting ? 'Please wait…' : isLogin ? 'Sign in' : 'Create workspace'}</Button></form>
       <p className="mt-7 text-center text-sm text-muted-foreground">{isLogin ? 'New to ComplyOS?' : 'Already have an account?'} <Link className="font-medium text-primary underline-offset-4 hover:underline" to={isLogin ? '/register' : '/login'}>{isLogin ? 'Create a workspace' : 'Sign in'}</Link></p></div></section>
   </main>;
 }

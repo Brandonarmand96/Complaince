@@ -51,3 +51,61 @@ test('login, registration and session management states', async ({ page }, testI
   await page.getByRole('button', { name: 'Revoke' }).click();
   await expect(page.getByText('No active sessions remain.')).toBeVisible();
 });
+
+test('verification, password recovery and invitation states', async ({ page }, testInfo) => {
+  await page.route('http://127.0.0.1:4119/**', route => {
+    const url = route.request().url();
+    if (url.endsWith('/auth/refresh')) return route.fulfill({ json: { accessToken: 'token', expiresIn: 900, user: { id: 'user-id', email: 'owner@example.com', displayName: 'Owner' } } });
+    if (url.endsWith('/auth/me')) return route.fulfill({ json: { id: 'user-id', email: 'owner@example.com', displayName: 'Owner', memberships: [{ id: 'membership-id', organizationId: '11111111-1111-4111-8111-111111111111', organizationName: 'Acme Security', status: 'ACTIVE', roles: ['Organization Owner'] }] } });
+    if (url.includes('/invitations/roles')) return route.fulfill({ json: [{ id: '33333333-3333-4333-8333-333333333333', name: 'Employee', description: 'Standard workspace access' }] });
+    if (url.endsWith('/auth/email-verification/consume')) return route.fulfill({ json: { verified: true } });
+    if (url.endsWith('/auth/password-reset/request')) return route.fulfill({ status: 202, json: { accepted: true } });
+    if (url.endsWith('/invitations')) return route.fulfill({ status: 201, json: { id: 'invite-id', status: 'PENDING' } });
+    return route.fulfill({ json: {} });
+  });
+  await page.goto('/verify-email?token=a-valid-verification-token-long-enough');
+  await expect(page.getByRole('heading', { name: 'Email verified' })).toBeVisible();
+  await page.goto('/forgot-password');
+  await page.getByLabel('Work email').fill('person@example.com');
+  await page.getByRole('button', { name: 'Send reset link' }).click();
+  await expect(page.getByText('If an account exists for that address')).toBeVisible();
+  await page.goto('/reset-password?token=a-valid-password-reset-token-long-enough');
+  await page.getByLabel('New password').fill('short');
+  await page.getByLabel('Confirm password').fill('different');
+  await page.getByRole('button', { name: 'Update password' }).click();
+  await expect(page.getByText('Use at least 12 characters.', { exact: true })).toBeVisible();
+  await page.goto('/users/invite');
+  await expect(page.getByRole('heading', { name: 'Invite a user' })).toBeVisible();
+  await page.getByLabel('Work email').fill('invitee@example.com');
+  await page.getByLabel('Employee').check();
+  await page.screenshot({ path: testInfo.outputPath('invite-user.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Send invitation' }).click();
+  await expect(page.getByText('Invitation sent to invitee@example.com.')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test('invitation acceptance, MFA setup and organization switching', async ({ page }, testInfo) => {
+  await page.route('http://127.0.0.1:4119/**', route => {
+    const url = route.request().url();
+    if (url.endsWith('/auth/refresh')) return route.fulfill({ json: { accessToken: 'token', expiresIn: 900, user: { id: 'user-id', email: 'owner@example.com', displayName: 'Owner' } } });
+    if (url.endsWith('/auth/me')) return route.fulfill({ json: { id: 'user-id', email: 'owner@example.com', displayName: 'Owner', activeOrganizationId: '11111111-1111-4111-8111-111111111111', memberships: [{ id: 'm1', organizationId: '11111111-1111-4111-8111-111111111111', organizationName: 'Acme Security', status: 'ACTIVE', roles: ['Owner'] }, { id: 'm2', organizationId: '22222222-2222-4222-8222-222222222222', organizationName: 'Northstar Labs', status: 'ACTIVE', roles: ['Auditor'] }] } });
+    if (url.endsWith('/invitations/preview')) return route.fulfill({ json: { email: 'new@example.com', organizationName: 'Acme Security', accountExists: false } });
+    if (url.endsWith('/invitations/accept-new')) return route.fulfill({ status: 201, json: { accessToken: 'token', expiresIn: 900, user: { id: 'new-user', email: 'new@example.com', displayName: 'New User' } } });
+    if (url.endsWith('/auth/mfa/enroll')) return route.fulfill({ json: { secret: 'JBSWY3DPEHPK3PXP', otpauthUri: 'otpauth://test' } });
+    if (url.endsWith('/auth/mfa/confirm')) return route.fulfill({ json: { enabled: true, recoveryCodes: ['ABCDE-12345', 'FGHIJ-67890'] } });
+    if (url.endsWith('/auth/switch-organization')) return route.fulfill({ json: { accessToken: 'switched', expiresIn: 900, activeOrganizationId: '22222222-2222-4222-8222-222222222222' } });
+    return route.fulfill({ json: {} });
+  });
+  await page.goto('/accept-invitation?token=valid-invitation-token-long-enough');
+  await expect(page.getByRole('heading', { name: 'Join Acme Security' })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('accept-invitation.png'), fullPage: true });
+  await page.goto('/settings/mfa');
+  await page.getByRole('button', { name: 'Start setup' }).click();
+  await expect(page.getByText('JBSWY3DPEHPK3PXP')).toBeVisible();
+  await page.getByLabel('Six-digit code').fill('123456');
+  await page.getByRole('button', { name: 'Confirm enrollment' }).click();
+  await expect(page.getByText('ABCDE-12345')).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('mfa-recovery-codes.png'), fullPage: true });
+  await page.getByLabel('Active organization').selectOption('22222222-2222-4222-8222-222222222222');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});

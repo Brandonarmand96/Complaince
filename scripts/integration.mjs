@@ -6,9 +6,10 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { assertTestResources } from '@complyos/runtime/testing';
 import { createDatabase } from '@complyos/runtime/database';
 import { jobStore, makeQueue, makeWorker, processHealthJob, IdempotencyConflict } from '@complyos/runtime/jobs';
-import { AccountUnavailable, authStore, InvalidCredentials, InvalidRefreshToken, InvalidVerificationToken, verifyAccessToken } from '@complyos/runtime/auth';
+import { AccountUnavailable, authStore, InvalidCredentials, InvalidInvitationToken, InvalidPasswordResetToken, InvalidRefreshToken, InvalidVerificationToken, verifyAccessToken } from '@complyos/runtime/auth';
 import { BUILT_IN_ROLES, ROLE_PERMISSION_MATRIX } from '@complyos/runtime/roles';
 import { createCaptureMailer } from '@complyos/runtime/mail';
+import { tenantRepository } from '@complyos/runtime/authorization';
 import { migrate } from './migrations.mjs';
 const read = path => existsSync(path) ? parseEnv(readFileSync(path, 'utf8')) : {};
 const env = { ...read('.env.test'), ...process.env };
@@ -86,6 +87,12 @@ try {
 
     const grants = await client.query('SELECT "organizationId", "roleId" FROM "MembershipRole" WHERE "membershipId" IN ($1, $2)', [ids.membershipA, ids.membershipB]);
     assert.equal(grants.rowCount, 2);
+    const sampleId = randomUUID();
+    await client.query('INSERT INTO "TenantSampleRecord" ("id","organizationId","ownerMembershipId","name","internalNotes") VALUES ($1,$2,$3,$4,$5)', [sampleId, ids.organizationB, ids.membershipB, 'Tenant B sample', 'private']);
+    const tenantARepo = tenantRepository({ query: client.query.bind(client) }, { userId: ids.user, sessionId: 'test', organizationId: ids.organizationA, membershipId: ids.membershipA, permissions: [] });
+    assert.equal(await tenantARepo.findSample(sampleId), null);
+    assert.equal(await tenantARepo.renameSample(sampleId, 'substituted'), null);
+    assert.equal((await client.query('SELECT "name" FROM "TenantSampleRecord" WHERE "id"=$1', [sampleId])).rows[0].name, 'Tenant B sample');
     await client.query('ROLLBACK');
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {});
@@ -164,7 +171,30 @@ try {
   const expiredSecret = randomUUID();
   await db.query('INSERT INTO "EmailVerificationToken" ("id", "userId", "tokenHash", "expiresAt") VALUES ($1, $2, $3, NOW() - INTERVAL \'1 minute\')', [randomUUID(), authUserId, createHash('sha256').update(expiredSecret).digest('hex')]);
   await assert.rejects(() => auth.consumeEmailVerification(expiredSecret), InvalidVerificationToken);
-  console.log('PASS live integration: jobs, identity, lockout, history, status/inactivity enforcement, new-device event, sessions and one-use email verification.');
+  stage = 'password recovery';
+  await auth.requestPasswordReset(email);
+  const resetSecret = new URL(captureMailer.messages.at(-1).text).searchParams.get('token');
+  assert.ok(resetSecret);
+  await auth.completePasswordReset(resetSecret, 'new correct horse battery staple');
+  await assert.rejects(() => auth.completePasswordReset(resetSecret, 'another secure password'), InvalidPasswordResetToken);
+  assert.equal((await auth.sessions(authUserId)).length, 0);
+  await auth.login({ email, password: 'new correct horse battery staple' });
+  stage = 'tenant-safe invitations';
+  const roles = await auth.assignableRoles(authUserId, authOrganizationId);
+  assert.ok(roles.some(role => role.name === 'Employee'));
+  const employeeRole = roles.find(role => role.name === 'Employee');
+  const inviteeEmail = `invitee-${randomUUID()}@example.com`;
+  const invitee = await auth.register({ email: inviteeEmail, password: 'invitee secure passphrase', displayName: 'Invitee', organizationName: 'Invitee Home' });
+  const createdInvite = await auth.createInvitation(authUserId, { organizationId: authOrganizationId, email: inviteeEmail, roleIds: [employeeRole.id] });
+  const firstInviteSecret = new URL(captureMailer.messages.at(-1).text).searchParams.get('token');
+  await auth.resendInvitation(authUserId, createdInvite.id);
+  const inviteSecret = new URL(captureMailer.messages.at(-1).text).searchParams.get('token');
+  await assert.rejects(() => auth.acceptInvitation(invitee.user.id, firstInviteSecret), InvalidInvitationToken);
+  await auth.acceptInvitation(invitee.user.id, inviteSecret);
+  const acceptedGrants = await db.query('SELECT m."organizationId", r."name" FROM "OrganizationMembership" m JOIN "MembershipRole" mr ON mr."membershipId" = m."id" JOIN "Role" r ON r."id" = mr."roleId" WHERE m."userId" = $1 AND m."organizationId" = $2', [invitee.user.id, authOrganizationId]);
+  assert.deepEqual(acceptedGrants.rows, [{ organizationId: authOrganizationId, name: 'Employee' }]);
+  await db.query('DELETE FROM "User" WHERE "id" = $1', [invitee.user.id]);
+  console.log('PASS live integration: jobs, identity, sessions, verification, password recovery and tenant-safe invitations.');
 } catch (error) {
   const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : 'NO_CODE';
   const safeDetail = ['configuration guard', 'database migration'].includes(stage) || code === 'ERR_ASSERTION';
