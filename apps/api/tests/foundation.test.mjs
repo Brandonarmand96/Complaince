@@ -82,6 +82,20 @@ describe('foundation API', () => {
     const production = fixture({ nodeEnv: 'production' });
     expect((await request(production.app).get('/api/v1/setup/jobs')).status).toBe(404);
   });
+  it('authorizes and validates governance, workflow and comment routes', async () => {
+    const governance = {
+      disableOrganization: jest.fn().mockResolvedValue({ disabledAt: 'now' }), updateSubscription: jest.fn().mockResolvedValue({ plan: 'TEAM' }),
+      listAudit: jest.fn().mockResolvedValue([]), listWorkflows: jest.fn().mockResolvedValue([]), saveWorkflow: jest.fn().mockResolvedValue({ id: 'workflow', version: 1 }),
+      approvals: jest.fn().mockResolvedValue([]), transition: jest.fn().mockResolvedValue({ state: 'APPROVED' }), createComment: jest.fn().mockResolvedValue({ id: 'comment' }),
+      editComment: jest.fn().mockResolvedValue(undefined), listComments: jest.fn().mockResolvedValue([]), toggleReaction: jest.fn().mockResolvedValue({ active: true }),
+    };
+    const { app } = fixture({ governance }); const token = await issueAccessToken(authConfig, '11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'); const auth = { Authorization: `Bearer ${token}` };
+    expect((await request(app).get('/api/v1/approvals').set(auth)).status).toBe(200);
+    expect((await request(app).post('/api/v1/workflows').set(auth).send({ name:'Review',trigger:'SUBMITTED',conditions:[],actors:[],outcomes:{approve:'APPROVED'} })).status).toBe(201);
+    expect((await request(app).post('/api/v1/comments').set(auth).send({ resourceType:'Finding',resourceId:'33333333-3333-4333-8333-333333333333',visibility:'INTERNAL',body:'Review this.' })).status).toBe(201);
+    expect((await request(app).post('/api/v1/comments').set(auth).send({ resourceType:'Finding',resourceId:'invalid',visibility:'SECRET',body:'' })).status).toBe(400);
+    expect(governance.createComment).toHaveBeenCalledTimes(1);
+  });
 });
 describe('configuration and integration guard', () => {
   const env = { DATABASE_URL: 'postgresql://u:p@db.example/dev', REDIS_URL: 'rediss://u:p@cache.example:6379/0', ACCESS_JWT_SECRET: 'test-secret-that-is-at-least-32-characters-long' };

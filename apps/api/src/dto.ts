@@ -1,4 +1,4 @@
-import { ArrayUnique, IsArray, IsEmail, IsInt, IsOptional, IsString, IsUUID, Length, Matches, Max, Min } from 'class-validator';
+import { ArrayUnique, IsArray, IsBoolean, IsEmail, IsIn, IsInt, IsObject, IsOptional, IsString, IsUUID, Length, Matches, Max, Min } from 'class-validator';
 import { Transform } from 'class-transformer';
 export class HealthJobDto {
   @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
@@ -86,3 +86,10 @@ export class MfaChallengeDto extends MfaCodeDto { @IsString() @Length(20, 200) c
 export class MfaResetRequestDto { @IsUUID() organizationId!: string; }
 export class UserStatusDto { @IsUUID() organizationId!: string; @IsString() @Matches(/^(ACTIVE|INACTIVE|LOCKED|SUSPENDED)$/) status!: string; }
 export class SwitchOrganizationDto { @IsUUID() organizationId!: string; }
+export class DisableOrganizationDto { @IsString() @Length(3, 500) reason!: string; }
+export class SubscriptionDto { @IsString() @Length(2, 80) plan!: string; @IsIn(['TRIAL','ACTIVE','PAST_DUE','CANCELED']) status!: string; @IsOptional() @IsInt() @Min(1) @Max(1000000) seatLimit?: number; }
+export class WorkflowDefinitionDto { @IsOptional() @IsUUID() id?: string; @IsString() @Length(2,120) name!: string; @IsString() @Length(2,100) trigger!: string; @IsArray() conditions!: unknown[]; @IsArray() actors!: unknown[]; @IsOptional() @IsInt() @Min(1) @Max(31536000) deadlineSeconds?: number; @IsOptional() @IsObject() escalation?: object; @IsObject() outcomes!: object; @IsOptional() @IsBoolean() active?: boolean; }
+export class WorkflowTransitionDto { @IsString() @Length(1,80) fromState!: string; @IsString() @Length(1,80) toState!: string; @IsOptional() @IsString() @Length(1,1000) comment?: string; }
+export class CommentCreateDto { @IsString() @Length(1,80) resourceType!: string; @IsUUID() resourceId!: string; @IsOptional() @IsUUID() parentId?: string; @IsIn(['INTERNAL','EXTERNAL']) visibility!: 'INTERNAL'|'EXTERNAL'; @IsString() @Length(1,5000) body!: string; @IsOptional() @IsArray() @ArrayUnique() @IsUUID(undefined,{each:true}) mentionIds?: string[]; }
+export class CommentEditDto { @IsString() @Length(1,5000) body!: string; }
+export class ReactionDto { @IsString() @Length(1,16) emoji!: string; }

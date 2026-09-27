@@ -3,6 +3,7 @@ import { createDatabase } from '@complyos/runtime/database';
 import { createLogger } from '@complyos/runtime/logger';
 import { checkRedis } from '@complyos/runtime/redis';
 import { jobStore, makeQueue, makeWorker } from '@complyos/runtime/jobs';
+import { deliverOutboxBatch, validateDomainEvent } from '@complyos/runtime/governance';
 import { loadEnvironment } from './config.js';
 const logger = createLogger();
 async function main() {
@@ -23,12 +24,23 @@ async function main() {
   };
   await reconcile();
   const timer = setInterval(() => { void reconcile(); }, 10000);
+  let delivering = false;
+  const deliverOutbox = async () => {
+    if (delivering) return;
+    delivering = true;
+    try { await deliverOutboxBatch(db, 'local-worker', async event => { validateDomainEvent(event.eventType, event.payload); logger.info({ eventId: event.id, eventType: event.eventType }, 'Domain event delivered.'); }); }
+    catch { logger.error('Could not deliver outbox events. Will retry.'); }
+    finally { delivering = false; }
+  };
+  await deliverOutbox();
+  const outboxTimer = setInterval(() => { void deliverOutbox(); }, 5000);
   logger.info('ComplyOS worker started.');
   let closing = false;
   const shutdown = async () => {
     if (closing) return;
     closing = true;
     clearInterval(timer);
+    clearInterval(outboxTimer);
     const deadline = setTimeout(() => process.exit(1), 10000);
     deadline.unref();
     await consumer.close();
@@ -42,4 +54,3 @@ main().catch((error: unknown) => {
   logger.error(error instanceof ConfigurationError ? error.message : 'Worker startup failed. Check the PostgreSQL/Redis URLs and apply the database migration.');
   process.exitCode = 1;
 });
-

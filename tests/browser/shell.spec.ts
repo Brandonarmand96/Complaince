@@ -109,3 +109,20 @@ test('invitation acceptance, MFA setup and organization switching', async ({ pag
   await page.getByLabel('Active organization').selectOption('22222222-2222-4222-8222-222222222222');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
+
+test('workflow, approvals and threaded comments are operable', async ({ page }, testInfo) => {
+  const resourceId='33333333-3333-4333-8333-333333333333';
+  await page.route('http://127.0.0.1:4119/**', route => { const url=route.request().url(); const method=route.request().method();
+    if(url.endsWith('/auth/refresh'))return route.fulfill({json:{accessToken:'token',expiresIn:900,user:{id:'user-id',email:'owner@example.com',displayName:'Owner'}}});
+    if(url.endsWith('/auth/me'))return route.fulfill({json:{id:'user-id',email:'owner@example.com',displayName:'Owner',memberships:[]}});
+    if(url.endsWith('/api/v1/workflows')&&method==='GET')return route.fulfill({json:[{id:'11111111-1111-4111-8111-111111111111',version:2,name:'Finding review',trigger:'FINDING_CREATED',conditions:[{field:'severity',operator:'eq',value:'HIGH'}],actors:[{type:'ASSIGNEE'}],deadlineSeconds:86400,escalation:{after:'MANAGER'},outcomes:{approve:'APPROVED'},active:true}]});
+    if(url.endsWith('/api/v1/workflows')&&method==='POST')return route.fulfill({status:201,json:{id:'workflow',version:3}});
+    if(url.endsWith('/api/v1/approvals'))return route.fulfill({json:[{id:'22222222-2222-4222-8222-222222222222',resourceType:'Finding',resourceId,state:'PENDING',dueAt:new Date().toISOString(),createdAt:new Date().toISOString()}]});
+    if(url.includes('/transition'))return route.fulfill({json:{state:'APPROVED'}});
+    if(url.includes('/api/v1/comments')&&method==='GET')return route.fulfill({json:[{id:'c1',parentId:null,authorMembershipId:'member-one',visibility:'INTERNAL',body:'Document the compensating control.',createdAt:new Date().toISOString()},{id:'c2',parentId:'c1',authorMembershipId:'member-two',visibility:'EXTERNAL',body:'Evidence is attached.',createdAt:new Date().toISOString()},{id:'c3',parentId:'c2',authorMembershipId:'member-three',visibility:'INTERNAL',body:'Reviewer confirmed the attachment.',createdAt:new Date().toISOString()}]});
+    if(url.endsWith('/api/v1/comments')&&method==='POST')return route.fulfill({status:201,json:{id:'c3'}}); return route.fulfill({json:{}});
+  });
+  await page.goto('/settings/workflows'); await expect(page.getByRole('heading',{name:'Workflow settings'})).toBeVisible(); await page.getByRole('button',{name:/Finding review/}).click(); await expect(page.getByLabel('Conditions')).toHaveValue(/severity/); await page.screenshot({path:testInfo.outputPath('workflow-settings.png'),fullPage:true});
+  await page.goto('/approvals'); await expect(page.getByRole('heading',{name:'Finding',exact:true})).toBeVisible(); await page.screenshot({path:testInfo.outputPath('approvals.png'),fullPage:true}); await page.getByRole('link',{name:'Open review'}).click(); await expect(page.getByRole('heading',{name:'Review Finding'})).toBeVisible(); await page.getByRole('link',{name:'Return to approvals'}).click(); await page.getByRole('button',{name:'Approve'}).click(); await expect(page.getByText('You have no pending approvals.')).toBeVisible();
+  await page.goto(`/comments/Finding/${resourceId}`); await expect(page.getByText('Document the compensating control.')).toBeVisible(); await expect(page.getByText('Reviewer confirmed the attachment.')).toBeVisible(); await page.screenshot({path:testInfo.outputPath('comments.png'),fullPage:true}); expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+});

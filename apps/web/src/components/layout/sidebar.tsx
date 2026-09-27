@@ -22,6 +22,8 @@ import {
   ShieldAlert,
   Scale,
   Warehouse,
+  GitPullRequest,
+  Inbox,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -76,6 +78,8 @@ export const navSections: NavSection[] = [
     items: [
       { label: 'Users', href: '/users', icon: Users },
       { label: 'Settings', href: '/settings', icon: Settings },
+      { label: 'Workflows', href: '/settings/workflows', icon: GitPullRequest },
+      { label: 'Approvals', href: '/approvals', icon: Inbox },
     ],
   },
 ];
@@ -86,8 +90,9 @@ export function Sidebar() {
   const collapsedSections = useUiStore(state => state.collapsedSections);
   const toggleSection = useUiStore(state => state.toggleSection);
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`);
+  const activeHref = navSections.flatMap(section => section.items).map(item => item.href)
+    .filter(href => pathname === href || pathname.startsWith(`${href}/`)).sort((a, b) => b.length - a.length)[0];
+  const isActive = (href: string) => href === activeHref;
 
   const sidebarContent = (
     <div className="flex h-full flex-col bg-card">

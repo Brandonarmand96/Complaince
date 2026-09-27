@@ -206,16 +206,16 @@ Roadmap reference: B07–B08, B11–B12.
 | [x] | T0098 | Add owner and department-scope policy helpers. | Permission alone cannot bypass record scope. | T0097 |
 | [x] | T0099 | Add explicit vendor/auditor field projection helpers. | Internal-only fields are absent, not merely hidden by the UI. | T0098 |
 | [x] | T0100 | Add a two-tenant ID-substitution integration test. | Tenant A cannot fetch or modify tenant B's sample record. | T0099 |
-| [ ] | T0101 | Add ConsultingClientGrant model. | Parent organization membership does not imply client access. | T0100 |
-| [ ] | T0102 | Add the client-access grant action. | Only authorized client grants allow organization switching. | T0101 |
-| [ ] | T0103 | Add SupportAccessRequest model with resources and expiration. | A request confers no access by itself. | T0102 |
-| [ ] | T0104 | Add support-access approval action. | Only the customer's designated approver grants access. | T0103 |
-| [ ] | T0105 | Add support-access revocation action. | An existing support session loses the revoked resource access. | T0104 |
-| [ ] | T0106 | Add support-grant expiry enforcement. | Expired grants fail even if a background cleanup has not run. | T0105 |
-| [ ] | T0107 | Add platform administrator evidence denial policy. | Platform role without a valid support grant cannot read customer evidence. | T0106 |
-| [ ] | T0108 | Add platform organization-disable action. | It requires platform authority and records the reason. | T0107 |
-| [ ] | T0109 | Add subscription metadata model and local update endpoint. | Subscription records persist without requiring a payment provider. | T0108 |
-| [ ] | T0110 | Add administrative approval guard. | Actions configured to require approval reject unapproved execution. | T0109 |
+| [x] | T0101 | Add ConsultingClientGrant model. | Completed: additive SQL binds consultant and grantor memberships to their respective tenants, prevents self-grants and uniquely identifies client access. | T0100 |
+| [x] | T0102 | Add the client-access grant action. | Completed: the runtime action requires `organization.manage`; switching eligibility checks an unrevoked, unexpired explicit grant rather than parent membership. | T0101 |
+| [x] | T0103 | Add SupportAccessRequest model with resources and expiration. | Completed: requests persist resource allowlists, reason, designated tenant approver, lifecycle and expiry; PENDING grants no access. | T0102 |
+| [x] | T0104 | Add support-access approval action. | Completed: only the request's tenant-scoped designated approver can resolve a pending, unexpired request. | T0103 |
+| [x] | T0105 | Add support-access revocation action. | Completed: revocation atomically changes APPROVED to REVOKED and stamps `revokedAt`; authorization rechecks persisted state. | T0104 |
+| [x] | T0106 | Add support-grant expiry enforcement. | Completed: every authorization query requires `expiresAt > NOW()` and does not depend on cleanup. | T0105 |
+| [x] | T0107 | Add platform administrator evidence denial policy. | Completed: resource authorization requires an active support request whose allowlist explicitly contains the requested resource. | T0106 |
+| [x] | T0108 | Add platform organization-disable action. | Completed: the protected endpoint verifies a persisted PlatformAdministrator identity and records actor, time and a required reason. | T0107 |
+| [x] | T0109 | Add subscription metadata model and local update endpoint. | Completed: platform-authorized local updates upsert plan/status/seat metadata without a payment-provider dependency. | T0108 |
+| [x] | T0110 | Add administrative approval guard. | Completed: the guard atomically consumes one matching, tenant-scoped, unexpired APPROVED record and otherwise raises `ApprovalRequired`. | T0109 |
 
 ### 05. Audit events, workflow primitives and history
 
@@ -223,35 +223,35 @@ Roadmap reference: C01–C06.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0111 | Add AuditLog model with the prompt's fields. | Actor, tenant, diffs, request ID and timestamp are persisted. | T0110 |
-| [ ] | T0112 | Add transaction-bound audit append helper. | A failed business transaction does not leave a success log. | T0111 |
-| [ ] | T0113 | Restrict application database privileges on AuditLog. | Application credentials cannot update/delete existing entries. | T0112 |
-| [ ] | T0114 | Add audit-log listing endpoint with authorized filters. | Organization and field restrictions hold on filtered results. | T0113 |
-| [ ] | T0115 | Add outbox event model. | Events store tenant, resource, type, payload version and delivery state. | T0114 |
-| [ ] | T0116 | Add transaction-bound domain-event publishing. | Business state and its event commit or roll back together. | T0115 |
-| [ ] | T0117 | Add the outbox delivery worker. | An interrupted delivery is retried without dropping the event. | T0116 |
-| [ ] | T0118 | Add consumer deduplication records. | A repeated event does not repeat a side effect. | T0117 |
-| [ ] | T0119 | Register the eleven named domain-event types. | Payload validation covers every event listed in the prompt. | T0118 |
-| [ ] | T0120 | Add optimistic-concurrency version checking. | A stale update returns a conflict instead of overwriting. | T0119 |
-| [ ] | T0121 | Add entity-version snapshot storage. | Snapshots record actor, timestamp and change reason. | T0120 |
-| [ ] | T0122 | Add version comparison utility. | It shows changed fields without exposing restricted fields. | T0121 |
-| [ ] | T0123 | Add restore-as-new-version helper. | Restoring preserves every existing version. | T0122 |
-| [ ] | T0124 | Add WorkflowDefinition model. | Triggers, conditions, actors, deadlines, escalation and outcomes can be stored. | T0123 |
-| [ ] | T0125 | Add WorkflowInstance and action history models. | One instance is pinned to one workflow definition version. | T0124 |
-| [ ] | T0126 | Add workflow condition evaluator. | Unsupported conditions fail validation rather than execute arbitrary code. | T0125 |
-| [ ] | T0127 | Add workflow transition action. | Only the assigned/authorized actor can execute an allowed transition. | T0126 |
-| [ ] | T0128 | Add workflow deadline job. | A missed deadline emits one escalation event. | T0127 |
-| [ ] | T0129 | Add configurable workflow-definition edit endpoint. | Only authorized administrators can alter future workflow definitions. | T0128 |
-| [ ] | T0130 | Build the workflow settings form for supported conditions/actors. | A saved configuration can be reopened; a full drag-and-drop builder stays later-phase. | T0129 |
-| [ ] | T0131 | Add approvals-inbox endpoint. | It returns only pending actions the user may perform. | T0130 |
-| [ ] | T0132 | Build approvals-inbox page. | Each row opens the correct review action. | T0131 |
-| [ ] | T0133 | Add Comment model with reply parent and visibility. | Tenant and parent-resource scope are enforced. | T0132 |
-| [ ] | T0134 | Add create-comment endpoint. | A caller cannot post on a resource they cannot access. | T0133 |
-| [ ] | T0135 | Add edit-comment endpoint with immutable edit history. | Editing preserves the prior text and actor. | T0134 |
-| [ ] | T0136 | Add comment-list projection for external users. | Internal notes and replies never leak through the API. | T0135 |
-| [ ] | T0137 | Add mention parser with recipient access checks. | Unauthorized recipients receive no mention notification. | T0136 |
-| [ ] | T0138 | Add comment-reaction endpoint. | Repeated same-user reactions follow the defined toggle rule. | T0137 |
-| [ ] | T0139 | Build threaded comment list and composer. | Replies and visibility labels reflect server data. | T0138 |
+| [x] | T0111 | Add AuditLog model with the prompt's fields. | Completed: actor user/membership, tenant, action/resource, before/after JSON, request ID, address and timestamp are persisted and tenant/time indexed. | T0110 |
+| [x] | T0112 | Add transaction-bound audit append helper. | Completed: `appendAudit` accepts the caller's transaction query function so audit and business mutation share commit/rollback. | T0111 |
+| [x] | T0113 | Restrict application database privileges on AuditLog. | Completed: UPDATE/DELETE/TRUNCATE are revoked and an append-only trigger rejects row mutation even for the table owner. | T0112 |
+| [x] | T0114 | Add audit-log listing endpoint with authorized filters. | Completed: authorized tenant-scoped listing supports bounded action/resource/actor/time filters and exposes only the documented projection. | T0113 |
+| [x] | T0115 | Add outbox event model. | Completed: events store tenant/resource/type/version/payload plus bounded delivery state, attempts, availability and safe error metadata. | T0114 |
+| [x] | T0116 | Add transaction-bound domain-event publishing. | Completed: `publishEvent` uses the business transaction's query function, preserving atomic commit/rollback. | T0115 |
+| [x] | T0117 | Add the outbox delivery worker. | Completed: the worker claims bounded batches with SKIP LOCKED, retries failed delivery with backoff, and transactionally records delivery/deduplication. | T0116 |
+| [x] | T0118 | Add consumer deduplication records. | Completed: `ConsumedEvent` has a consumer/event primary key, making repeated consumption a database conflict instead of a repeated effect. | T0117 |
+| [x] | T0119 | Register the eleven named domain-event types. | Completed: all eleven event names are registered and payloads must be non-array objects; focused tests cover every name and rejection. | T0118 |
+| [x] | T0120 | Add optimistic-concurrency version checking. | Completed: version append compares the caller's expected version with the latest persisted snapshot and raises ConcurrencyConflict on stale state. | T0119 |
+| [x] | T0121 | Add entity-version snapshot storage. | Completed: tenant/entity/version uniqueness stores JSON snapshots with actor membership, timestamp and reason. | T0120 |
+| [x] | T0122 | Add version comparison utility. | Completed: comparison returns changed fields while omitting caller-supplied restricted fields; focused test covers redaction. | T0121 |
+| [x] | T0123 | Add restore-as-new-version helper. | Completed: restoration reads the requested historical snapshot and appends it at the next version after concurrency validation, preserving all history. | T0122 |
+| [x] | T0124 | Add WorkflowDefinition model. | Completed: versioned definitions persist triggers, declarative conditions/actors, deadlines, escalation, outcomes and activation. | T0123 |
+| [x] | T0125 | Add WorkflowInstance and action history models. | Completed: a composite tenant-safe foreign key pins each instance to an immutable definition version; transitions append actor history. | T0124 |
+| [x] | T0126 | Add workflow condition evaluator. | Completed: only eq/neq/in/exists are interpreted; unknown operators throw and never execute input. Focused tests pass. | T0125 |
+| [x] | T0127 | Add workflow transition action. | Completed: compare-and-update requires expected state and assigned actor or workflow manager, then appends history in the same transaction. | T0126 |
+| [x] | T0128 | Add workflow deadline job. | Completed: one compare-and-update claims each overdue instance and transactionally emits one escalation event. | T0127 |
+| [x] | T0129 | Add configurable workflow-definition edit endpoint. | Completed: organization managers publish immutable future definition versions through the validated workflow endpoint. | T0128 |
+| [x] | T0130 | Build the workflow settings form for supported conditions/actors. | Completed: the responsive form lists definitions, reopens a selected version and publishes supported trigger/actor/deadline/outcome configuration. | T0129 |
+| [x] | T0131 | Add approvals-inbox endpoint. | Completed: tenant-scoped query returns incomplete instances assigned to the caller or manageable by their permission, ordered by deadline. | T0130 |
+| [x] | T0132 | Build approvals-inbox page. | Completed: loading/error/empty states and approve/reject actions use expected-state transitions with visible conflict recovery. | T0131 |
+| [x] | T0133 | Add Comment model with reply parent and visibility. | Completed: comments persist resource, author and visibility; composite parent foreign keys prevent cross-tenant reply attachment. | T0132 |
+| [x] | T0134 | Add create-comment endpoint. | Completed: validated authenticated creation binds tenant/author/resource and rejects unauthorized mention recipients. | T0133 |
+| [x] | T0135 | Add edit-comment endpoint with immutable edit history. | Completed: only the tenant-scoped author may edit; prior body and editing actor are inserted before the update in one transaction. | T0134 |
+| [x] | T0136 | Add comment-list projection for external users. | Completed: the endpoint selects an explicit field projection and external mode filters the full reply set to EXTERNAL visibility in SQL. | T0135 |
+| [x] | T0137 | Add mention parser with recipient access checks. | Completed: structured mention IDs are parsed, checked against the resource access allowlist and written transactionally; unauthorized recipients reject the comment. | T0136 |
+| [x] | T0138 | Add comment-reaction endpoint. | Completed: tenant-scoped same-user/emoji reactions toggle deterministically and return the resulting active state. | T0137 |
+| [x] | T0139 | Build threaded comment list and composer. | Completed: the direct resource route renders roots/replies, visibility labels, empty/error states and a reply-aware composer. | T0138 |
 
 ### 06. Declare domain tables before their APIs
 
@@ -259,17 +259,17 @@ Roadmap reference: D01–D08, domain model tasks.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0140 | Add or complete Organization fields in Prisma: name, industry, registration, country, timezone, employee count, website and contacts. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0139 |
-| [ ] | T0141 | Add or complete BusinessUnit fields in Prisma: name, type, parent unit and organization. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0140 |
-| [ ] | T0142 | Add or complete Department fields in Prisma: name, business unit and head membership. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0141 |
-| [ ] | T0143 | Add or complete Location fields in Prisma: name, address, country and timezone. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0142 |
-| [ ] | T0144 | Add or complete Framework fields in Prisma: name, publisher, description and global/custom ownership. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0143 |
-| [ ] | T0145 | Add or complete UnifiedControl fields in Prisma: reference, title, objective, type, category, guidance, test procedure and frequency. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0144 |
-| [ ] | T0146 | Add or complete ComplianceProgram fields in Prisma: name, framework version, owner, scope, dates, assessment type, stage and status. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0145 |
-| [ ] | T0147 | Add or complete Risk fields in Prisma: reference, title, category, threat, vulnerability, owner, process and review date. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0146 |
-| [ ] | T0148 | Add or complete Asset fields in Prisma: type, owner, custodian, department, location, IP, hostname, serial, OS, environment, classification and criticality. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0147 |
-| [ ] | T0149 | Add or complete Vendor fields in Prisma: service, business owner, contacts, countries, data/system access and contract dates. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0148 |
-| [ ] | T0150 | Add or complete Finding fields in Prisma: type, title, description, severity, impact, owner, due date and management response. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0149 |
+| [x] | T0140 | Add or complete Organization fields in Prisma: name, industry, registration, country, timezone, employee count, website and contacts. | Completed through the repository's ADR-selected SQL/pg stack: additive nullable/defaulted columns preserve existing organizations and constrain employee count. | T0139 |
+| [x] | T0141 | Add or complete BusinessUnit fields in Prisma: name, type, parent unit and organization. | Completed in additive SQL with tenant uniqueness, bounded type enum and tenant-safe parent hierarchy. | T0140 |
+| [x] | T0142 | Add or complete Department fields in Prisma: name, business unit and head membership. | Completed with tenant-safe unit/head foreign keys and tenant/name uniqueness. | T0141 |
+| [x] | T0143 | Add or complete Location fields in Prisma: name, address, country and timezone. | Completed with structured address, country/timezone and tenant/name uniqueness. | T0142 |
+| [x] | T0144 | Add or complete Framework fields in Prisma: name, publisher, description and global/custom ownership. | Completed with a check requiring global frameworks to have no tenant and custom frameworks to have one. | T0143 |
+| [x] | T0145 | Add or complete UnifiedControl fields in Prisma: reference, title, objective, type, category, guidance, test procedure and frequency. | Completed with all requested fields and null-aware global/custom reference uniqueness. | T0144 |
+| [x] | T0146 | Add or complete ComplianceProgram fields in Prisma: name, framework version, owner, scope, dates, assessment type, stage and status. | Completed with tenant-safe ownership, structured scope and date-order validation; version relation is attached when T0155 creates FrameworkVersion. | T0145 |
+| [x] | T0147 | Add or complete Risk fields in Prisma: reference, title, category, threat, vulnerability, owner, process and review date. | Completed with tenant-safe ownership and tenant/reference uniqueness. | T0146 |
+| [x] | T0148 | Add or complete Asset fields in Prisma: type, owner, custodian, department, location, IP, hostname, serial, OS, environment, classification and criticality. | Completed with all requested fields, native INET and tenant-safe people/department/location references. | T0147 |
+| [x] | T0149 | Add or complete Vendor fields in Prisma: service, business owner, contacts, countries, data/system access and contract dates. | Completed with structured multi-value access/contact fields, tenant-safe owner and contract date ordering. | T0148 |
+| [x] | T0150 | Add or complete Finding fields in Prisma: type, title, description, severity, impact, owner, due date and management response. | Completed with tenant-safe owner and constrained severity. | T0149 |
 | [ ] | T0151 | Add or complete Task fields in Prisma: title, description, type, priority, owner, due date, progress and status. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0150 |
 | [ ] | T0152 | Add or complete Policy fields in Prisma: number, title, category, author, owner, approver, classification and review dates. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0151 |
 | [ ] | T0153 | Add or complete Audit fields in Prisma: title, type, scope, objectives, criteria, lead auditor, dates and status. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0152 |

@@ -7,8 +7,10 @@ import { IdempotencyConflict, type HealthInput, type JobPage } from '@complyos/r
 import { AccountUnavailable, EmailAlreadyRegistered, InvalidCredentials, InvalidInvitationToken, InvalidPasswordResetToken, InvalidRefreshToken, InvalidVerificationToken, InvitationForbidden, type AuthConfig, type AuthResult, type MfaRequiredResult } from '@complyos/runtime/auth';
 import { SecurityPolicyError } from '@complyos/runtime/security';
 import { TenantAccessDenied } from '@complyos/runtime/authorization';
+import type { governanceApi } from '@complyos/runtime/governance-api';
+import { ConcurrencyConflict } from '@complyos/runtime/governance';
 import { authenticateAccessToken, createRateLimiter, HttpError, errorHandler, parseJobQuery, requestLogging, validateBody } from './http.js';
-import { EmailVerificationConsumeDto, EmailVerificationRequestDto, HealthJobDto, InvitationAcceptDto, InvitationAcceptNewDto, InvitationCreateDto, LoginDto, MfaChallengeDto, MfaCodeDto, MfaResetRequestDto, PasswordResetCompleteDto, PasswordResetRequestDto, RefreshDto, RegisterDto, SwitchOrganizationDto, UserStatusDto } from './dto.js';
+import { CommentCreateDto, CommentEditDto, DisableOrganizationDto, EmailVerificationConsumeDto, EmailVerificationRequestDto, HealthJobDto, InvitationAcceptDto, InvitationAcceptNewDto, InvitationCreateDto, LoginDto, MfaChallengeDto, MfaCodeDto, MfaResetRequestDto, PasswordResetCompleteDto, PasswordResetRequestDto, ReactionDto, RefreshDto, RegisterDto, SubscriptionDto, SwitchOrganizationDto, UserStatusDto, WorkflowDefinitionDto, WorkflowTransitionDto } from './dto.js';
 import { openapi } from './openapi.js';
 export interface AppDependencies {
   checkDatabase: () => Promise<unknown>;
@@ -47,6 +49,7 @@ export interface AppDependencies {
     requestMfaReset: (userId: string, organizationId: string) => Promise<unknown>;
     approveMfaReset: (userId: string, requestId: string) => Promise<unknown>;
   };
+  governance?: ReturnType<typeof governanceApi>;
   logger?: ReturnType<typeof createLogger>;
 }
 export function createApp(deps: AppDependencies) {
@@ -67,7 +70,7 @@ export function createApp(deps: AppDependencies) {
       response.setHeader('Access-Control-Allow-Credentials', 'true');
       response.setHeader('Access-Control-Expose-Headers', 'X-Request-Id');
       response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Idempotency-Key, Authorization');
-      response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
     }
     if (request.method === 'OPTIONS') { response.sendStatus(204); return; }
     next();
@@ -187,6 +190,19 @@ export function createApp(deps: AppDependencies) {
   app.post('/invitations/preview', strictAuthLimit, validateBody(InvitationAcceptDto), async (_request, response) => { try { response.json(await deps.auth.invitationDetails((response.locals.body as InvitationAcceptDto).token)); } catch (error) { if (error instanceof InvalidInvitationToken) throw new HttpError(400, 'INVALID_INVITATION_TOKEN', 'This invitation is invalid or expired.'); throw error; } });
   app.post('/invitations/accept-new', strictAuthLimit, validateBody(InvitationAcceptNewDto), async (request, response) => { const body = response.locals.body as InvitationAcceptNewDto; try { sendAuth(response, await deps.auth.acceptNewInvitation(body.token, body, requestContext(request)), 201); } catch (error) { if (error instanceof InvalidInvitationToken) throw new HttpError(400, 'INVALID_INVITATION_TOKEN', 'This invitation is invalid or expired.'); if (error instanceof EmailAlreadyRegistered) throw new HttpError(409, 'ACCOUNT_EXISTS', 'Sign in to accept this invitation.'); if (error instanceof SecurityPolicyError) throw new HttpError(400, 'PASSWORD_POLICY', error.message); throw error; } });
   app.post('/users/:id/status', requireAuth, validateBody(UserStatusDto), async (request, response) => { const body = response.locals.body as UserStatusDto; try { response.json(await deps.security.transitionUserStatus((response.locals.auth as { userId: string }).userId, body.organizationId, String(request.params.id), body.status)); } catch (error) { if (error instanceof TenantAccessDenied) throw new HttpError(403, 'FORBIDDEN', 'Permission is required.'); if (error instanceof SecurityPolicyError) throw new HttpError(409, 'INVALID_STATUS_TRANSITION', error.message); throw error; } });
+  const governance = () => { if (!deps.governance) throw new HttpError(503, 'GOVERNANCE_UNAVAILABLE', 'Governance services are unavailable.'); return deps.governance; };
+  const identity = (response: express.Response) => response.locals.auth as { userId: string; sessionId: string };
+  app.post('/api/v1/platform/organizations/:id/disable', requireAuth, validateBody(DisableOrganizationDto), async (request, response) => { try { const auth = identity(response); response.json(await governance().disableOrganization(auth.userId, String(request.params.id), (response.locals.body as DisableOrganizationDto).reason)); } catch (error) { if (error instanceof TenantAccessDenied) throw new HttpError(403,'FORBIDDEN','Platform administrator authority is required.'); throw error; } });
+  app.put('/api/v1/platform/organizations/:id/subscription', requireAuth, validateBody(SubscriptionDto), async (request, response) => { try { const auth = identity(response); response.json(await governance().updateSubscription(auth.userId, String(request.params.id), response.locals.body as SubscriptionDto)); } catch (error) { if (error instanceof TenantAccessDenied) throw new HttpError(403,'FORBIDDEN','Platform administrator authority is required.'); throw error; } });
+  app.get('/api/v1/audit-logs', requireAuth, async (request, response) => { const auth = identity(response); try { response.json(await governance().listAudit(auth.userId, auth.sessionId, { action: typeof request.query.action==='string'?request.query.action:undefined, resourceType: typeof request.query.resourceType==='string'?request.query.resourceType:undefined, actorUserId: typeof request.query.actorUserId==='string'?request.query.actorUserId:undefined, limit: typeof request.query.limit==='string'?Number(request.query.limit):undefined, before: typeof request.query.before==='string'?new Date(request.query.before):undefined })); } catch (error) { if (error instanceof TenantAccessDenied) throw new HttpError(403,'FORBIDDEN','Audit permission is required.'); throw error; } });
+  app.get('/api/v1/workflows', requireAuth, async (_request,response)=>{ const auth=identity(response); response.json(await governance().listWorkflows(auth.userId,auth.sessionId)); });
+  app.post('/api/v1/workflows', requireAuth, validateBody(WorkflowDefinitionDto), async (_request,response)=>{ const auth=identity(response); try { response.status(201).json(await governance().saveWorkflow(auth.userId,auth.sessionId,response.locals.body as WorkflowDefinitionDto)); } catch(error) { if(error instanceof TenantAccessDenied) throw new HttpError(403,'FORBIDDEN','Organization management permission is required.'); throw error; } });
+  app.get('/api/v1/approvals', requireAuth, async (_request,response)=>{ const auth=identity(response); response.json(await governance().approvals(auth.userId,auth.sessionId)); });
+  app.post('/api/v1/approvals/:id/transition', requireAuth, validateBody(WorkflowTransitionDto), async (request,response)=>{ const auth=identity(response); try { response.json(await governance().transition(auth.userId,auth.sessionId,String(request.params.id),response.locals.body as WorkflowTransitionDto)); } catch(error) { if(error instanceof ConcurrencyConflict) throw new HttpError(409,'CONCURRENCY_CONFLICT',error.message); throw error; } });
+  app.get('/api/v1/comments', requireAuth, async (request,response)=>{ const auth=identity(response); const resourceType=String(request.query.resourceType??''); const resourceId=String(request.query.resourceId??''); if(!resourceType || !/^[0-9a-f-]{36}$/i.test(resourceId)) throw new HttpError(400,'VALIDATION_ERROR','A valid resource type and ID are required.'); response.json(await governance().listComments(auth.userId,auth.sessionId,{resourceType,resourceId,external:request.query.external==='true'})); });
+  app.post('/api/v1/comments', requireAuth, validateBody(CommentCreateDto), async (_request,response)=>{ const auth=identity(response); response.status(201).json(await governance().createComment(auth.userId,auth.sessionId,response.locals.body as CommentCreateDto)); });
+  app.patch('/api/v1/comments/:id', requireAuth, validateBody(CommentEditDto), async (request,response)=>{ const auth=identity(response); await governance().editComment(auth.userId,auth.sessionId,String(request.params.id),(response.locals.body as CommentEditDto).body); response.sendStatus(204); });
+  app.post('/api/v1/comments/:id/reactions', requireAuth, validateBody(ReactionDto), async (request,response)=>{ const auth=identity(response); response.json(await governance().toggleReaction(auth.userId,auth.sessionId,String(request.params.id),(response.locals.body as ReactionDto).emoji)); });
   // Development plumbing only, never an unauthenticated production job interface.
   if (deps.nodeEnv !== 'production') {
     app.get('/api/v1/setup/jobs', async (request, response) => {

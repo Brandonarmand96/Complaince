@@ -7,6 +7,7 @@ import { jobStore, makeQueue } from '@complyos/runtime/jobs';
 import { authStore } from '@complyos/runtime/auth';
 import { createSmtpMailer } from '@complyos/runtime/mail';
 import { securityStore } from '@complyos/runtime/security';
+import { governanceApi } from '@complyos/runtime/governance-api';
 const logger = createLogger();
 try {
   const env = loadEnvironment();
@@ -17,7 +18,7 @@ try {
   const security = securityStore(db, env.auth.accessSecret);
   const app = createApp({
     checkDatabase: () => db.query('SELECT 1'), checkRedis: () => checkRedis(env.redisUrl),
-    submitJob: store.submit, listJobs: store.list, logger, webOrigin: env.webOrigin, nodeEnv: env.nodeEnv, auth, security, authConfig: env.auth,
+    submitJob: store.submit, listJobs: store.list, logger, webOrigin: env.webOrigin, nodeEnv: env.nodeEnv, auth, security, governance: governanceApi(db), authConfig: env.auth,
   });
   const server = app.listen(env.port, '127.0.0.1', () => logger.info({ port: env.port }, 'ComplyOS API started on 127.0.0.1.'));
   let closing = false;
