@@ -76,6 +76,7 @@ export const navSections: NavSection[] = [
   {
     title: 'Administration',
     items: [
+      { label: 'Organizations', href: '/organizations', icon: Building2 },
       { label: 'Users', href: '/users', icon: Users },
       { label: 'Settings', href: '/settings', icon: Settings },
       { label: 'Workflows', href: '/settings/workflows', icon: GitPullRequest },

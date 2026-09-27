@@ -1,5 +1,5 @@
-import { ArrayUnique, IsArray, IsBoolean, IsEmail, IsIn, IsInt, IsObject, IsOptional, IsString, IsUUID, Length, Matches, Max, Min } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { ArrayMaxSize, ArrayUnique, IsArray, IsBoolean, IsEmail, IsIn, IsInt, IsObject, IsOptional, IsString, IsUrl, IsUUID, Length, Matches, Max, Min, ValidateNested } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 export class HealthJobDto {
   @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
   @IsString()
@@ -93,3 +93,25 @@ export class WorkflowTransitionDto { @IsString() @Length(1,80) fromState!: strin
 export class CommentCreateDto { @IsString() @Length(1,80) resourceType!: string; @IsUUID() resourceId!: string; @IsOptional() @IsUUID() parentId?: string; @IsIn(['INTERNAL','EXTERNAL']) visibility!: 'INTERNAL'|'EXTERNAL'; @IsString() @Length(1,5000) body!: string; @IsOptional() @IsArray() @ArrayUnique() @IsUUID(undefined,{each:true}) mentionIds?: string[]; }
 export class CommentEditDto { @IsString() @Length(1,5000) body!: string; }
 export class ReactionDto { @IsString() @Length(1,16) emoji!: string; }
+export class OrganizationContactDto { @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,100) name!:string; @IsOptional() @IsEmail() @Length(3,254) email?:string; @IsOptional() @IsString() @Length(5,40) phone?:string; }
+export class OrganizationCreateDto {
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,120) name!:string;
+ @IsOptional() @IsString() @Length(2,100) industry?:string;
+ @IsOptional() @IsString() @Length(2,100) registrationNumber?:string;
+ @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/) country?:string;
+ @IsString() @Length(1,80) @Matches(/^[A-Za-z_]+(?:\/[A-Za-z_+-]+)+$|^UTC$/) timezone!:string;
+ @IsOptional() @IsInt() @Min(0) @Max(10000000) employeeCount?:number;
+ @IsOptional() @IsUrl({require_protocol:true,protocols:['http','https']}) @Length(8,500) website?:string;
+ @IsOptional() @IsArray() @ArrayMaxSize(20) @ValidateNested({each:true}) @Type(()=>OrganizationContactDto) contacts?:OrganizationContactDto[];
+}
+export class OrganizationPatchDto {
+ @IsInt() @Min(1) version!:number;
+ @IsOptional() @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,120) name?:string;
+ @IsOptional() @IsString() @Length(2,100) industry?:string;
+ @IsOptional() @IsString() @Length(2,100) registrationNumber?:string;
+ @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/) country?:string;
+ @IsOptional() @IsString() @Length(1,80) @Matches(/^[A-Za-z_]+(?:\/[A-Za-z_+-]+)+$|^UTC$/) timezone?:string;
+ @IsOptional() @IsInt() @Min(0) @Max(10000000) employeeCount?:number;
+ @IsOptional() @IsUrl({require_protocol:true,protocols:['http','https']}) @Length(8,500) website?:string;
+ @IsOptional() @IsArray() @ArrayMaxSize(20) @ValidateNested({each:true}) @Type(()=>OrganizationContactDto) contacts?:OrganizationContactDto[];
+}

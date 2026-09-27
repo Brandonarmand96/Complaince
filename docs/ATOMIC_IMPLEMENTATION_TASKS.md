@@ -270,17 +270,17 @@ Roadmap reference: D01–D08, domain model tasks.
 | [x] | T0148 | Add or complete Asset fields in Prisma: type, owner, custodian, department, location, IP, hostname, serial, OS, environment, classification and criticality. | Completed with all requested fields, native INET and tenant-safe people/department/location references. | T0147 |
 | [x] | T0149 | Add or complete Vendor fields in Prisma: service, business owner, contacts, countries, data/system access and contract dates. | Completed with structured multi-value access/contact fields, tenant-safe owner and contract date ordering. | T0148 |
 | [x] | T0150 | Add or complete Finding fields in Prisma: type, title, description, severity, impact, owner, due date and management response. | Completed with tenant-safe owner and constrained severity. | T0149 |
-| [ ] | T0151 | Add or complete Task fields in Prisma: title, description, type, priority, owner, due date, progress and status. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0150 |
-| [ ] | T0152 | Add or complete Policy fields in Prisma: number, title, category, author, owner, approver, classification and review dates. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0151 |
-| [ ] | T0153 | Add or complete Audit fields in Prisma: title, type, scope, objectives, criteria, lead auditor, dates and status. | The migration preserves existing data and includes the prompt's remaining fields and enums for this record. | T0152 |
-| [ ] | T0154 | Add structured program-scope membership tables. | Systems, applications, networks, units, processes, vendors and data types have explicit links. | T0153 |
-| [ ] | T0155 | Add FrameworkVersion model with effective/retirement dates. | Each version belongs to a framework and cannot duplicate its version identifier. | T0154 |
-| [ ] | T0156 | Add FrameworkDomain model. | Domains belong to a specific framework version. | T0155 |
-| [ ] | T0157 | Add FrameworkRequirement model. | Requirements have version-scoped references, domain, description and weight. | T0156 |
-| [ ] | T0158 | Add ControlImplementation model with tenant and implementation scope. | One implementation can be reused by compatible programs. | T0157 |
-| [ ] | T0159 | Add ControlOwner assignment relation. | Primary/secondary/reviewer/approver roles reference tenant memberships. | T0158 |
-| [ ] | T0160 | Add ControlRequirementMapping model. | It stores mapping type, coverage, rationale, provenance and approval status. | T0159 |
-| [ ] | T0161 | Add program-to-implementation applicability relation. | Program applicability stays separate from reusable implementation status. | T0160 |
+| [x] | T0151 | Add or complete Task fields in Prisma: title, description, type, priority, owner, due date, progress and status. | Completed in the ADR-selected SQL/pg stack with bounded priority/status/progress and a tenant-safe owner relationship. | T0150 |
+| [x] | T0152 | Add or complete Policy fields in Prisma: number, title, category, author, owner, approver, classification and review dates. | Completed with tenant-safe membership roles, classification constraints, tenant/number uniqueness and ordered review dates. | T0151 |
+| [x] | T0153 | Add or complete Audit fields in Prisma: title, type, scope, objectives, criteria, lead auditor, dates and status. | Completed with structured scope, objective/criteria lists, tenant-safe lead auditor, lifecycle status and ordered dates. | T0152 |
+| [x] | T0154 | Add structured program-scope membership tables. | Completed: systems, applications, networks, business units, processes, vendors and data types have separate explicit join tables. | T0153 |
+| [x] | T0155 | Add FrameworkVersion model with effective/retirement dates. | Completed with framework/version uniqueness, effective date and retirement-date ordering. | T0154 |
+| [x] | T0156 | Add FrameworkDomain model. | Completed with version ownership, version/reference uniqueness and a composite key for requirement integrity. | T0155 |
+| [x] | T0157 | Add FrameworkRequirement model. | Completed with version-scoped reference/domain integrity, description and nonnegative decimal weight. | T0156 |
+| [x] | T0158 | Add ControlImplementation model with tenant and implementation scope. | Completed with reusable tenant implementation records, structured scope and constrained implementation status. | T0157 |
+| [x] | T0159 | Add ControlOwner assignment relation. | Completed: primary, secondary, reviewer and approver assignments use tenant-composite membership and implementation keys. | T0158 |
+| [x] | T0160 | Add ControlRequirementMapping model. | Completed with six mapping types, bounded coverage, rationale, JSON provenance, approval lifecycle and pair uniqueness. | T0159 |
+| [x] | T0161 | Add program-to-implementation applicability relation. | Completed: applicability and rationale live in a separate program/implementation join rather than implementation status. | T0160 |
 
 ### 07. Organization and administration records
 
@@ -288,15 +288,15 @@ Roadmap reference: B09–B10, B12.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0162 | Add Organization DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0161 |
-| [ ] | T0163 | Add GET /api/v1/organizations with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0162 |
-| [ ] | T0164 | Add POST /api/v1/organizations. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0163 |
-| [ ] | T0165 | Add GET /api/v1/organizations/:id. | Missing and unauthorized records are handled without exposing private data. | T0164 |
-| [ ] | T0166 | Add PATCH /api/v1/organizations/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0165 |
-| [ ] | T0167 | Add the typed organizations query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0166 |
-| [ ] | T0168 | Build or port the organizations list using its API hook. | The list shows real pagination, loading, empty and error states. | T0167 |
-| [ ] | T0169 | Build the organizations creation form. | Valid submission persists and validation errors remain next to fields. | T0168 |
-| [ ] | T0170 | Build the organizations detail view. | A direct URL loads the selected record and permitted fields. | T0169 |
+| [x] | T0162 | Add Organization DTO validation. | Completed: strict create/patch DTOs validate required fields, country/timezone/URL/count/contact rules and reject unknown or lifecycle fields. | T0161 |
+| [x] | T0163 | Add GET /api/v1/organizations with pagination. | Completed: active-membership scope and 1–100 bounded pagination are enforced; focused unauthorized-context and route tests pass. | T0162 |
+| [x] | T0164 | Add POST /api/v1/organizations. | Completed: authorized creation transactionally creates the organization, owner membership, built-in roles/grants and append-only audit event. | T0163 |
+| [x] | T0165 | Add GET /api/v1/organizations/:id. | Completed: detail requires an active membership and returns the same 404 projection for missing/inaccessible records after verified tenant context. | T0164 |
+| [x] | T0166 | Add PATCH /api/v1/organizations/:id for ordinary editable fields. | Completed: only ordinary DTO fields update; expected version prevents stale overwrites and successful changes append audit history. | T0165 |
+| [x] | T0167 | Add the typed organizations query/mutation hooks. | Completed: typed list/detail/create/update hooks preserve ApiError data and update/invalidate list/detail query keys. | T0166 |
+| [x] | T0168 | Build or port the organizations list using its API hook. | Completed: responsive list includes real pagination plus loading, empty, error/retry and populated states. | T0167 |
+| [x] | T0169 | Build the organizations creation form. | Completed: validated submission persists, server field errors stay adjacent to inputs, and success navigates to the created record. | T0168 |
+| [x] | T0170 | Build the organizations detail view. | Completed: direct routes load the authorized record with loading/error states, permitted fields, contacts and safe external website link. | T0169 |
 | [ ] | T0171 | Build the organizations edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0170 |
 
 ### 08. Business units

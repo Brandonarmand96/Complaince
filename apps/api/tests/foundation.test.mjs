@@ -96,6 +96,17 @@ describe('foundation API', () => {
     expect((await request(app).post('/api/v1/comments').set(auth).send({ resourceType:'Finding',resourceId:'invalid',visibility:'SECRET',body:'' })).status).toBe(400);
     expect(governance.createComment).toHaveBeenCalledTimes(1);
   });
+  it('validates and scopes organization list, creation, detail and update routes', async () => {
+    const record={id:'33333333-3333-4333-8333-333333333333',name:'Northstar',timezone:'Africa/Lagos',contacts:[],version:1};
+    const organizations={list:jest.fn().mockResolvedValue({data:[record],total:1,page:1,limit:20}),create:jest.fn().mockResolvedValue(record),detail:jest.fn().mockResolvedValue(record),update:jest.fn().mockResolvedValue({...record,name:'Northstar Group',version:2})};
+    const {app}=fixture({organizations});const token=await issueAccessToken(authConfig,'11111111-1111-4111-8111-111111111111','22222222-2222-4222-8222-222222222222');const auth={Authorization:`Bearer ${token}`};
+    expect((await request(app).get('/api/v1/organizations?page=1&limit=20').set(auth)).body.total).toBe(1);
+    expect((await request(app).post('/api/v1/organizations').set(auth).send({name:'Northstar',timezone:'Africa/Lagos',country:'NG'})).status).toBe(201);
+    expect((await request(app).post('/api/v1/organizations').set(auth).send({name:'N',timezone:'bad',country:'Nigeria',disabledAt:'now'})).status).toBe(400);
+    expect((await request(app).get(`/api/v1/organizations/${record.id}`).set(auth)).status).toBe(200);
+    expect((await request(app).patch(`/api/v1/organizations/${record.id}`).set(auth).send({name:'Northstar Group',version:1})).body.version).toBe(2);
+    expect(organizations.create).toHaveBeenCalledTimes(1);
+  });
 });
 describe('configuration and integration guard', () => {
   const env = { DATABASE_URL: 'postgresql://u:p@db.example/dev', REDIS_URL: 'rediss://u:p@cache.example:6379/0', ACCESS_JWT_SECRET: 'test-secret-that-is-at-least-32-characters-long' };

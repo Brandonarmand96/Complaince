@@ -17,6 +17,9 @@ import { WorkflowSettingsPage } from '@/pages/WorkflowSettingsPage';
 import { ApprovalsPage } from '@/pages/ApprovalsPage';
 import { CommentsPage } from '@/pages/CommentsPage';
 import { ResourceReviewPage } from '@/pages/ResourceReviewPage';
+import { OrganizationsPage } from '@/pages/OrganizationsPage';
+import { OrganizationCreatePage } from '@/pages/OrganizationCreatePage';
+import { OrganizationDetailPage } from '@/pages/OrganizationDetailPage';
 function ProtectedShell() { const { user, loading } = useAuth(); if (loading) return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Restoring your session…</div>; return user ? <AppShell /> : <Navigate to="/login" replace />; }
 
 export function App() {
@@ -40,8 +43,11 @@ export function App() {
           <Route path="approvals" element={<ApprovalsPage />} />
           <Route path="comments/:resourceType/:resourceId" element={<CommentsPage />} />
           <Route path="reviews/:resourceType/:resourceId" element={<ResourceReviewPage />} />
+          <Route path="organizations" element={<OrganizationsPage />} />
+          <Route path="organizations/new" element={<OrganizationCreatePage />} />
+          <Route path="organizations/:id" element={<OrganizationDetailPage />} />
           {navSections.flatMap((section) => section.items)
-            .filter((item) => !['/dashboard','/settings/workflows','/approvals'].includes(item.href))
+            .filter((item) => !['/dashboard','/settings/workflows','/approvals','/organizations'].includes(item.href))
             .map((item) => (
               <Route key={item.href} path={item.href} element={
                 <div className="space-y-2">

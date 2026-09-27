@@ -9,8 +9,9 @@ import { SecurityPolicyError } from '@complyos/runtime/security';
 import { TenantAccessDenied } from '@complyos/runtime/authorization';
 import type { governanceApi } from '@complyos/runtime/governance-api';
 import { ConcurrencyConflict } from '@complyos/runtime/governance';
+import type { organizationStore } from '@complyos/runtime/organizations';
 import { authenticateAccessToken, createRateLimiter, HttpError, errorHandler, parseJobQuery, requestLogging, validateBody } from './http.js';
-import { CommentCreateDto, CommentEditDto, DisableOrganizationDto, EmailVerificationConsumeDto, EmailVerificationRequestDto, HealthJobDto, InvitationAcceptDto, InvitationAcceptNewDto, InvitationCreateDto, LoginDto, MfaChallengeDto, MfaCodeDto, MfaResetRequestDto, PasswordResetCompleteDto, PasswordResetRequestDto, ReactionDto, RefreshDto, RegisterDto, SubscriptionDto, SwitchOrganizationDto, UserStatusDto, WorkflowDefinitionDto, WorkflowTransitionDto } from './dto.js';
+import { CommentCreateDto, CommentEditDto, DisableOrganizationDto, EmailVerificationConsumeDto, EmailVerificationRequestDto, HealthJobDto, InvitationAcceptDto, InvitationAcceptNewDto, InvitationCreateDto, LoginDto, MfaChallengeDto, MfaCodeDto, MfaResetRequestDto, OrganizationCreateDto, OrganizationPatchDto, PasswordResetCompleteDto, PasswordResetRequestDto, ReactionDto, RefreshDto, RegisterDto, SubscriptionDto, SwitchOrganizationDto, UserStatusDto, WorkflowDefinitionDto, WorkflowTransitionDto } from './dto.js';
 import { openapi } from './openapi.js';
 export interface AppDependencies {
   checkDatabase: () => Promise<unknown>;
@@ -50,6 +51,7 @@ export interface AppDependencies {
     approveMfaReset: (userId: string, requestId: string) => Promise<unknown>;
   };
   governance?: ReturnType<typeof governanceApi>;
+  organizations?: ReturnType<typeof organizationStore>;
   logger?: ReturnType<typeof createLogger>;
 }
 export function createApp(deps: AppDependencies) {
@@ -203,6 +205,11 @@ export function createApp(deps: AppDependencies) {
   app.post('/api/v1/comments', requireAuth, validateBody(CommentCreateDto), async (_request,response)=>{ const auth=identity(response); response.status(201).json(await governance().createComment(auth.userId,auth.sessionId,response.locals.body as CommentCreateDto)); });
   app.patch('/api/v1/comments/:id', requireAuth, validateBody(CommentEditDto), async (request,response)=>{ const auth=identity(response); await governance().editComment(auth.userId,auth.sessionId,String(request.params.id),(response.locals.body as CommentEditDto).body); response.sendStatus(204); });
   app.post('/api/v1/comments/:id/reactions', requireAuth, validateBody(ReactionDto), async (request,response)=>{ const auth=identity(response); response.json(await governance().toggleReaction(auth.userId,auth.sessionId,String(request.params.id),(response.locals.body as ReactionDto).emoji)); });
+  const organizations=()=>{if(!deps.organizations)throw new HttpError(503,'ORGANIZATIONS_UNAVAILABLE','Organization services are unavailable.');return deps.organizations;};
+  app.get('/api/v1/organizations',requireAuth,async(request,response)=>{const auth=identity(response);const page=Number(request.query.page??1);const limit=Number(request.query.limit??20);if(!Number.isInteger(page)||page<1||page>10000||!Number.isInteger(limit)||limit<1||limit>100)throw new HttpError(400,'VALIDATION_ERROR','Page or limit is outside the allowed range.');try{response.json(await organizations().list(auth.userId,auth.sessionId,{page,limit}));}catch(error){if(error instanceof TenantAccessDenied)throw new HttpError(403,'FORBIDDEN','An active organization membership is required.');throw error;}});
+  app.post('/api/v1/organizations',requireAuth,validateBody(OrganizationCreateDto),async(_request,response)=>{const auth=identity(response);try{response.status(201).json(await organizations().create(auth.userId,auth.sessionId,response.locals.body as OrganizationCreateDto,response.locals.requestId));}catch(error){if(error instanceof TenantAccessDenied)throw new HttpError(403,'FORBIDDEN','Organization management permission is required.');throw error;}});
+  app.get('/api/v1/organizations/:id',requireAuth,async(request,response)=>{const id=String(request.params.id);if(!/^[0-9a-f-]{36}$/i.test(id))throw new HttpError(400,'VALIDATION_ERROR','Organization ID is invalid.');const auth=identity(response);try{const record=await organizations().detail(auth.userId,auth.sessionId,id);if(!record)throw new HttpError(404,'ORGANIZATION_NOT_FOUND','Organization not found.');response.json(record);}catch(error){if(error instanceof TenantAccessDenied)throw new HttpError(403,'FORBIDDEN','An active organization membership is required.');throw error;}});
+  app.patch('/api/v1/organizations/:id',requireAuth,validateBody(OrganizationPatchDto),async(request,response)=>{const id=String(request.params.id);if(!/^[0-9a-f-]{36}$/i.test(id))throw new HttpError(400,'VALIDATION_ERROR','Organization ID is invalid.');const auth=identity(response);try{response.json(await organizations().update(auth.userId,auth.sessionId,id,response.locals.body as OrganizationPatchDto,response.locals.requestId));}catch(error){if(error instanceof TenantAccessDenied)throw new HttpError(403,'FORBIDDEN','Organization management permission is required.');if(error instanceof ConcurrencyConflict)throw new HttpError(409,'CONCURRENCY_CONFLICT',error.message);throw error;}});
   // Development plumbing only, never an unauthenticated production job interface.
   if (deps.nodeEnv !== 'production') {
     app.get('/api/v1/setup/jobs', async (request, response) => {

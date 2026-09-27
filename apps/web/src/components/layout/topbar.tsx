@@ -18,6 +18,7 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/tasks': { title: 'Tasks', subtitle: 'Remediation and work tracking' },
   '/reports': { title: 'Reports', subtitle: 'Compliance and audit reporting' },
   '/users': { title: 'Users', subtitle: 'Team members and access' },
+  '/organizations': { title: 'Organizations', subtitle: 'Tenant administration and operating context' },
   '/settings': { title: 'Settings', subtitle: 'Organization configuration' },
 };
 
