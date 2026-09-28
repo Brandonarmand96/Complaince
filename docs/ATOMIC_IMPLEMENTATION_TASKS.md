@@ -297,7 +297,7 @@ Roadmap reference: B09–B10, B12.
 | [x] | T0168 | Build or port the organizations list using its API hook. | Completed: responsive list includes real pagination plus loading, empty, error/retry and populated states. | T0167 |
 | [x] | T0169 | Build the organizations creation form. | Completed: validated submission persists, server field errors stay adjacent to inputs, and success navigates to the created record. | T0168 |
 | [x] | T0170 | Build the organizations detail view. | Completed: direct routes load the authorized record with loading/error states, permitted fields, contacts and safe external website link. | T0169 |
-| [ ] | T0171 | Build the organizations edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0170 |
+| [x] | T0171 | Build the organizations edit form. | Completed: edit routes hydrate saved values, update ordinary fields and show recovery guidance for stale versions. | T0170 |
 
 ### 08. Business units
 
@@ -305,16 +305,16 @@ Roadmap reference: B09.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0172 | Add BusinessUnit DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0171 |
-| [ ] | T0173 | Add GET /api/v1/business-units with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0172 |
-| [ ] | T0174 | Add POST /api/v1/business-units. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0173 |
-| [ ] | T0175 | Add GET /api/v1/business-units/:id. | Missing and unauthorized records are handled without exposing private data. | T0174 |
-| [ ] | T0176 | Add PATCH /api/v1/business-units/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0175 |
-| [ ] | T0177 | Add the typed business-units query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0176 |
-| [ ] | T0178 | Build or port the business-units list using its API hook. | The list shows real pagination, loading, empty and error states. | T0177 |
-| [ ] | T0179 | Build the business-units creation form. | Valid submission persists and validation errors remain next to fields. | T0178 |
-| [ ] | T0180 | Build the business-units detail view. | A direct URL loads the selected record and permitted fields. | T0179 |
-| [ ] | T0181 | Build the business-units edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0180 |
+| [x] | T0172 | Add BusinessUnit DTO validation. | Completed: strict create/patch DTOs trim names, constrain types and UUID parents, require versions and reject unknown fields. | T0171 |
+| [x] | T0173 | Add GET /api/v1/business-units with pagination. | Completed: active-tenant scope, 1–100 bounded pagination and unauthorized-context coverage are in place. | T0172 |
+| [x] | T0174 | Add POST /api/v1/business-units. | Completed: tenant-safe parent validation, transactional persistence and append-only creation audit are enforced. | T0173 |
+| [x] | T0175 | Add GET /api/v1/business-units/:id. | Completed: tenant-filtered detail uses safe not-found behavior for missing or inaccessible records. | T0174 |
+| [x] | T0176 | Add PATCH /api/v1/business-units/:id for ordinary editable fields. | Completed: only name, type and tenant-safe parent change; expected version rejects stale writes and updates are audited. | T0175 |
+| [x] | T0177 | Add the typed business-units query/mutation hooks. | Completed: typed hooks preserve ApiError details and update/invalidate list and detail caches. | T0176 |
+| [x] | T0178 | Build or port the business-units list using its API hook. | Completed: responsive list includes real pagination plus loading, empty, retryable error and populated states. | T0177 |
+| [x] | T0179 | Build the business-units creation form. | Completed: valid submission navigates to detail and server field errors remain associated with their controls. | T0178 |
+| [x] | T0180 | Build the business-units detail view. | Completed: direct authorized routes render permitted hierarchy, type, version and timestamps with loading/error states. | T0179 |
+| [x] | T0181 | Build the business-units edit form. | Completed: reload hydrates saved values and stale-write conflicts remain visible with explicit recovery guidance. | T0180 |
 
 ### 09. Departments
 

@@ -7,6 +7,8 @@ import { validateEnvironment } from '../dist/config/environment.js';
 import { assertTestResources } from '@complyos/runtime/testing';
 import { hashPassword, InvalidCredentials, issueAccessToken, verifyAccessToken, verifyPassword } from '@complyos/runtime/auth';
 import { createCaptureMailer } from '@complyos/runtime/mail';
+import { businessUnitStore } from '@complyos/runtime/business-units';
+import { TenantAccessDenied } from '@complyos/runtime/authorization';
 const authConfig = { accessSecret: 'test-secret-that-is-at-least-32-characters-long', issuer: 'test-issuer', audience: 'test-audience', accessTtlSeconds: 900, refreshTtlSeconds: 3600 };
 function fixture(overrides = {}) {
   const entries = [];
@@ -106,6 +108,22 @@ describe('foundation API', () => {
     expect((await request(app).get(`/api/v1/organizations/${record.id}`).set(auth)).status).toBe(200);
     expect((await request(app).patch(`/api/v1/organizations/${record.id}`).set(auth).send({name:'Northstar Group',version:1})).body.version).toBe(2);
     expect(organizations.create).toHaveBeenCalledTimes(1);
+  });
+  it('validates business-unit CRUD routes and rejects disallowed fields', async () => {
+    const record={id:'33333333-3333-4333-8333-333333333333',organizationId:'11111111-1111-4111-8111-111111111111',name:'Security',type:'FUNCTION',parentUnitId:null,parentName:null,version:1};
+    const businessUnits={list:jest.fn().mockResolvedValue({data:[record],total:1,page:1,limit:20}),create:jest.fn().mockResolvedValue(record),detail:jest.fn().mockResolvedValue(record),update:jest.fn().mockResolvedValue({...record,name:'Security Operations',version:2})};
+    const {app}=fixture({businessUnits});const token=await issueAccessToken(authConfig,'user-id','22222222-2222-4222-8222-222222222222');const auth={Authorization:`Bearer ${token}`};
+    expect((await request(app).get('/api/v1/business-units?page=1&limit=20').set(auth)).body.total).toBe(1);
+    expect((await request(app).get('/api/v1/business-units?limit=101').set(auth)).status).toBe(400);
+    expect((await request(app).post('/api/v1/business-units').set(auth).send({name:'Security',type:'FUNCTION'})).status).toBe(201);
+    expect((await request(app).post('/api/v1/business-units').set(auth).send({name:'S',type:'TEAM',organizationId:record.organizationId})).status).toBe(400);
+    expect((await request(app).get(`/api/v1/business-units/${record.id}`).set(auth)).status).toBe(200);
+    expect((await request(app).patch(`/api/v1/business-units/${record.id}`).set(auth).send({name:'Security Operations',version:1})).body.version).toBe(2);
+    expect(businessUnits.create).toHaveBeenCalledTimes(1);
+  });
+  it('rejects business-unit access without a verified active tenant context', async()=>{
+    const db={query:jest.fn().mockResolvedValue({rows:[],rowCount:0}),connect:jest.fn()};
+    await expect(businessUnitStore(db).list('user-id','session-id',{page:1,limit:20})).rejects.toBeInstanceOf(TenantAccessDenied);
   });
 });
 describe('configuration and integration guard', () => {

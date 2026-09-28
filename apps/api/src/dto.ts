@@ -115,3 +115,14 @@ export class OrganizationPatchDto {
  @IsOptional() @IsUrl({require_protocol:true,protocols:['http','https']}) @Length(8,500) website?:string;
  @IsOptional() @IsArray() @ArrayMaxSize(20) @ValidateNested({each:true}) @Type(()=>OrganizationContactDto) contacts?:OrganizationContactDto[];
 }
+export class BusinessUnitCreateDto {
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,120) name!:string;
+ @IsIn(['DIVISION','SUBSIDIARY','FUNCTION','OTHER']) type!:'DIVISION'|'SUBSIDIARY'|'FUNCTION'|'OTHER';
+ @IsOptional() @IsUUID() parentUnitId?:string|null;
+}
+export class BusinessUnitPatchDto {
+ @IsInt() @Min(1) version!:number;
+ @IsOptional() @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,120) name?:string;
+ @IsOptional() @IsIn(['DIVISION','SUBSIDIARY','FUNCTION','OTHER']) type?:'DIVISION'|'SUBSIDIARY'|'FUNCTION'|'OTHER';
+ @IsOptional() @IsUUID() parentUnitId?:string|null;
+}
