@@ -25,6 +25,8 @@ import {
   GitPullRequest,
   Inbox,
   Network,
+  UsersRound,
+  MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -79,6 +81,8 @@ export const navSections: NavSection[] = [
     items: [
       { label: 'Organizations', href: '/organizations', icon: Building2 },
       { label: 'Business units', href: '/business-units', icon: Network },
+      { label: 'Departments', href: '/departments', icon: UsersRound },
+      { label: 'Locations', href: '/locations', icon: MapPin },
       { label: 'Users', href: '/users', icon: Users },
       { label: 'Settings', href: '/settings', icon: Settings },
       { label: 'Workflows', href: '/settings/workflows', icon: GitPullRequest },

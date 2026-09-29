@@ -20,6 +20,8 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/users': { title: 'Users', subtitle: 'Team members and access' },
   '/organizations': { title: 'Organizations', subtitle: 'Tenant administration and operating context' },
   '/business-units': { title: 'Business units', subtitle: 'Operating structure for the active organization' },
+  '/departments': { title: 'Departments', subtitle: 'Teams, ownership and reporting structure' },
+  '/locations': { title: 'Locations', subtitle: 'Physical operating sites and local context' },
   '/settings': { title: 'Settings', subtitle: 'Organization configuration' },
 };
 

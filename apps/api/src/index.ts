@@ -10,6 +10,9 @@ import { securityStore } from '@complyos/runtime/security';
 import { governanceApi } from '@complyos/runtime/governance-api';
 import { organizationStore } from '@complyos/runtime/organizations';
 import { businessUnitStore } from '@complyos/runtime/business-units';
+import { departmentStore } from '@complyos/runtime/departments';
+import { locationStore } from '@complyos/runtime/locations';
+import { frameworkStore } from '@complyos/runtime/frameworks';
 const logger = createLogger();
 try {
   const env = loadEnvironment();
@@ -20,7 +23,7 @@ try {
   const security = securityStore(db, env.auth.accessSecret);
   const app = createApp({
     checkDatabase: () => db.query('SELECT 1'), checkRedis: () => checkRedis(env.redisUrl),
-    submitJob: store.submit, listJobs: store.list, logger, webOrigin: env.webOrigin, nodeEnv: env.nodeEnv, auth, security, governance: governanceApi(db), organizations: organizationStore(db), businessUnits: businessUnitStore(db), authConfig: env.auth,
+    submitJob: store.submit, listJobs: store.list, logger, webOrigin: env.webOrigin, nodeEnv: env.nodeEnv, auth, security, governance: governanceApi(db), organizations: organizationStore(db), businessUnits: businessUnitStore(db), departments: departmentStore(db), locations: locationStore(db), frameworks: frameworkStore(db), authConfig: env.auth,
   });
   const server = app.listen(env.port, '127.0.0.1', () => logger.info({ port: env.port }, 'ComplyOS API started on 127.0.0.1.'));
   let closing = false;

@@ -34,4 +34,4 @@ Build shared dependencies first with `npm run build` at the repository root. `np
 { "status": "ok", "service": "complyos-api" }
 ```
 
-This endpoint checks process liveness only. `/api/docs` describes readiness and the development-only sample job endpoints. Authentication and compliance business endpoints are later implementation tasks.
+This endpoint checks process liveness only. `/api/docs` describes health, authentication, governance, organization-structure (including locations), and framework-catalog endpoints. Location records are organization-scoped. Framework reads combine global catalog entries with custom entries owned by the active organization; global frameworks are read-only. Location and custom-framework updates require the current `version` and return HTTP 409 when an edit is stale.

@@ -126,3 +126,20 @@ export class BusinessUnitPatchDto {
  @IsOptional() @IsIn(['DIVISION','SUBSIDIARY','FUNCTION','OTHER']) type?:'DIVISION'|'SUBSIDIARY'|'FUNCTION'|'OTHER';
  @IsOptional() @IsUUID() parentUnitId?:string|null;
 }
+export class DepartmentCreateDto {
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,120) name!:string;
+ @IsOptional() @IsUUID() businessUnitId?:string|null;
+ @IsOptional() @IsUUID() headMembershipId?:string|null;
+}
+export class DepartmentPatchDto { @IsInt() @Min(1) version!:number; @IsOptional() @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,120) name?:string; @IsOptional() @IsUUID() businessUnitId?:string|null; @IsOptional() @IsUUID() headMembershipId?:string|null; }
+export class LocationAddressDto {
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,200) line1!:string;
+ @IsOptional() @IsString() @Length(1,200) line2?:string;
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,100) city!:string;
+ @IsOptional() @IsString() @Length(1,100) state?:string;
+ @IsOptional() @IsString() @Length(1,30) postalCode?:string;
+}
+export class LocationCreateDto { @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,120) name!:string; @ValidateNested() @Type(()=>LocationAddressDto) address!:LocationAddressDto; @IsString() @Matches(/^[A-Z]{2}$/) country!:string; @IsString() @Length(1,80) @Matches(/^[A-Za-z_]+(?:\/[A-Za-z_+-]+)+$|^UTC$/) timezone!:string; }
+export class LocationPatchDto { @IsInt() @Min(1) version!:number; @IsOptional() @IsString() @Length(2,120) name?:string; @IsOptional() @ValidateNested() @Type(()=>LocationAddressDto) address?:LocationAddressDto; @IsOptional() @IsString() @Matches(/^[A-Z]{2}$/) country?:string; @IsOptional() @IsString() @Length(1,80) @Matches(/^[A-Za-z_]+(?:\/[A-Za-z_+-]+)+$|^UTC$/) timezone?:string; }
+export class FrameworkCreateDto { @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,160) name!:string; @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,160) publisher!:string; @IsOptional() @IsString() @Length(1,2000) description?:string; @IsIn(['GLOBAL','CUSTOM']) ownership!:'GLOBAL'|'CUSTOM'; }
+export class FrameworkPatchDto { @IsInt() @Min(1) version!:number; @IsOptional() @IsString() @Length(2,160) name?:string; @IsOptional() @IsString() @Length(2,160) publisher?:string; @IsOptional() @IsString() @Length(1,2000) description?:string; }

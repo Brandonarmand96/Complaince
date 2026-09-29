@@ -322,16 +322,16 @@ Roadmap reference: B09.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0182 | Add Department DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0181 |
-| [ ] | T0183 | Add GET /api/v1/departments with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0182 |
-| [ ] | T0184 | Add POST /api/v1/departments. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0183 |
-| [ ] | T0185 | Add GET /api/v1/departments/:id. | Missing and unauthorized records are handled without exposing private data. | T0184 |
-| [ ] | T0186 | Add PATCH /api/v1/departments/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0185 |
-| [ ] | T0187 | Add the typed departments query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0186 |
-| [ ] | T0188 | Build or port the departments list using its API hook. | The list shows real pagination, loading, empty and error states. | T0187 |
-| [ ] | T0189 | Build the departments creation form. | Valid submission persists and validation errors remain next to fields. | T0188 |
-| [ ] | T0190 | Build the departments detail view. | A direct URL loads the selected record and permitted fields. | T0189 |
-| [ ] | T0191 | Build the departments edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0190 |
+| [x] | T0182 | Add Department DTO validation. | Completed: strict create/patch DTOs validate names, tenant-link UUIDs and expected versions while rejecting unknown fields. | T0181 |
+| [x] | T0183 | Add GET /api/v1/departments with pagination. | Completed: active-tenant scope, bounded pagination and unauthorized-context coverage are enforced. | T0182 |
+| [x] | T0184 | Add POST /api/v1/departments. | Completed: business-unit and active-head membership links are tenant-verified and creation is transactionally audited. | T0183 |
+| [x] | T0185 | Add GET /api/v1/departments/:id. | Completed: detail is tenant-filtered and missing/inaccessible records share safe not-found behavior. | T0184 |
+| [x] | T0186 | Add PATCH /api/v1/departments/:id for ordinary editable fields. | Completed: ordinary fields use optimistic concurrency, tenant-safe links and append-only update audit history. | T0185 |
+| [x] | T0187 | Add the typed departments query/mutation hooks. | Completed: typed hooks preserve ApiError details and update/invalidate department list/detail caches. | T0186 |
+| [x] | T0188 | Build or port the departments list using its API hook. | Completed: responsive pagination plus loading, empty, retryable-error and populated states are implemented. | T0187 |
+| [x] | T0189 | Build the departments creation form. | Completed: valid submissions persist and server errors remain associated with their controls. | T0188 |
+| [x] | T0190 | Build the departments detail view. | Completed: direct routes render permitted team, business-unit, head and version data. | T0189 |
+| [x] | T0191 | Build the departments edit form. | Completed: saved values hydrate on reload and stale edits show explicit recovery guidance. | T0190 |
 
 ### 10. Locations
 
@@ -339,16 +339,16 @@ Roadmap reference: B09.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0192 | Add Location DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0191 |
-| [ ] | T0193 | Add GET /api/v1/locations with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0192 |
-| [ ] | T0194 | Add POST /api/v1/locations. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0193 |
-| [ ] | T0195 | Add GET /api/v1/locations/:id. | Missing and unauthorized records are handled without exposing private data. | T0194 |
-| [ ] | T0196 | Add PATCH /api/v1/locations/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0195 |
-| [ ] | T0197 | Add the typed locations query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0196 |
-| [ ] | T0198 | Build or port the locations list using its API hook. | The list shows real pagination, loading, empty and error states. | T0197 |
-| [ ] | T0199 | Build the locations creation form. | Valid submission persists and validation errors remain next to fields. | T0198 |
-| [ ] | T0200 | Build the locations detail view. | A direct URL loads the selected record and permitted fields. | T0199 |
-| [ ] | T0201 | Build the locations edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0200 |
+| [x] | T0192 | Add Location DTO validation. | Completed: nested addresses, country codes, timezones, names and expected versions are strictly validated. | T0191 |
+| [x] | T0193 | Add GET /api/v1/locations with pagination. | Completed: active-tenant scope, bounded pagination and unauthorized-context coverage are enforced. | T0192 |
+| [x] | T0194 | Add POST /api/v1/locations. | Completed: authorized creation persists the tenant record transactionally and appends an audit event. | T0193 |
+| [x] | T0195 | Add GET /api/v1/locations/:id. | Completed: tenant-filtered detail prevents cross-organization disclosure and handles missing records safely. | T0194 |
+| [x] | T0196 | Add PATCH /api/v1/locations/:id for ordinary editable fields. | Completed: ordinary fields update with expected-version protection and append-only auditing. | T0195 |
+| [x] | T0197 | Add the typed locations query/mutation hooks. | Completed: typed hooks preserve server errors and update/invalidate location caches. | T0196 |
+| [x] | T0198 | Build or port the locations list using its API hook. | Completed: responsive pagination plus loading, empty, retryable-error and populated states are implemented. | T0197 |
+| [x] | T0199 | Build the locations creation form. | Completed: nested address submission persists and inline server validation stays linked to fields. | T0198 |
+| [x] | T0200 | Build the locations detail view. | Completed: direct routes render the authorized address, country, timezone and update metadata. | T0199 |
+| [x] | T0201 | Build the locations edit form. | Completed: saved address values hydrate on reload and stale edits show explicit recovery guidance. | T0200 |
 
 ### 11. Framework catalog
 
@@ -356,16 +356,16 @@ Roadmap reference: D01–D03.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0202 | Add Framework DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0201 |
-| [ ] | T0203 | Add GET /api/v1/frameworks with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0202 |
-| [ ] | T0204 | Add POST /api/v1/frameworks. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0203 |
-| [ ] | T0205 | Add GET /api/v1/frameworks/:id. | Missing and unauthorized records are handled without exposing private data. | T0204 |
-| [ ] | T0206 | Add PATCH /api/v1/frameworks/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0205 |
-| [ ] | T0207 | Add the typed frameworks query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0206 |
-| [ ] | T0208 | Build or port the frameworks list using its API hook. | The list shows real pagination, loading, empty and error states. | T0207 |
-| [ ] | T0209 | Build the frameworks creation form. | Valid submission persists and validation errors remain next to fields. | T0208 |
-| [ ] | T0210 | Build the frameworks detail view. | A direct URL loads the selected record and permitted fields. | T0209 |
-| [ ] | T0211 | Build the frameworks edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0210 |
+| [x] | T0202 | Add Framework DTO validation. | Completed: strict create/patch DTOs constrain ownership, required identity fields, descriptions and expected versions. | T0201 |
+| [x] | T0203 | Add GET /api/v1/frameworks with pagination. | Completed: global plus active-tenant custom scope, bounded pagination and unauthorized-context coverage are enforced. | T0202 |
+| [x] | T0204 | Add POST /api/v1/frameworks. | Completed: only active-tenant custom frameworks persist through this endpoint and creation is transactionally audited. | T0203 |
+| [x] | T0205 | Add GET /api/v1/frameworks/:id. | Completed: available global and tenant-custom records load without exposing other organizations' frameworks. | T0204 |
+| [x] | T0206 | Add PATCH /api/v1/frameworks/:id for ordinary editable fields. | Completed: global records remain immutable and tenant-custom edits use optimistic concurrency plus auditing. | T0205 |
+| [x] | T0207 | Add the typed frameworks query/mutation hooks. | Completed: typed hooks preserve ApiError details and update/invalidate framework list/detail caches. | T0206 |
+| [x] | T0208 | Build or port the frameworks list using its API hook. | Completed: responsive catalog differentiates global/custom ownership and includes pagination plus loading, empty and retry states. | T0207 |
+| [x] | T0209 | Build the frameworks creation form. | Completed: custom framework submissions persist and inline server errors remain associated with fields. | T0208 |
+| [x] | T0210 | Build the frameworks detail view. | Completed: direct routes render ownership, publisher, description and version while global records remain read-only. | T0209 |
+| [x] | T0211 | Build the frameworks edit form. | Completed: custom values hydrate on reload and stale edits display explicit recovery guidance. | T0210 |
 
 ### 12. Unified control records
 
