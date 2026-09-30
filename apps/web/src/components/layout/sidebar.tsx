@@ -188,7 +188,7 @@ export function Sidebar() {
       <button
         type="button"
         onClick={() => setMobileOpen(true)}
-        className="fixed left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-lg border bg-card shadow-sm md:hidden"
+        className="absolute left-4 top-4 z-50 flex h-10 w-10 items-center justify-center rounded-lg border bg-card shadow-sm md:hidden"
         aria-label="Open menu"
         aria-expanded={mobileOpen}
         aria-controls="app-sidebar"

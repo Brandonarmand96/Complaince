@@ -34,7 +34,7 @@ export function Topbar() {
   }, [match.title]);
 
   return (
-    <header aria-label="Page header" className="sticky top-0 z-30 flex min-h-[4rem] items-center gap-3 border-b bg-background/80 py-3 pl-20 pr-4 backdrop-blur-md md:px-6">
+    <header aria-label="Page header" className="relative z-30 flex min-h-[4rem] items-center gap-3 border-b bg-background/95 py-3 pl-20 pr-4 md:sticky md:top-0 md:px-6">
       <div className="flex min-w-0 flex-col">
         <p className="truncate text-lg font-semibold text-foreground">{match.title}</p>
         {match.subtitle && (

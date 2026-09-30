@@ -373,16 +373,16 @@ Roadmap reference: D04–D05.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0212 | Add UnifiedControl DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0211 |
-| [ ] | T0213 | Add GET /api/v1/controls with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0212 |
-| [ ] | T0214 | Add POST /api/v1/controls. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0213 |
-| [ ] | T0215 | Add GET /api/v1/controls/:id. | Missing and unauthorized records are handled without exposing private data. | T0214 |
-| [ ] | T0216 | Add PATCH /api/v1/controls/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0215 |
-| [ ] | T0217 | Add the typed controls query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0216 |
-| [ ] | T0218 | Build or port the controls list using its API hook. | The list shows real pagination, loading, empty and error states. | T0217 |
-| [ ] | T0219 | Build the controls creation form. | Valid submission persists and validation errors remain next to fields. | T0218 |
-| [ ] | T0220 | Build the controls detail view. | A direct URL loads the selected record and permitted fields. | T0219 |
-| [ ] | T0221 | Build the controls edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0220 |
+| [x] | T0212 | Add UnifiedControl DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0211 |
+| [x] | T0213 | Add GET /api/v1/controls with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0212 |
+| [x] | T0214 | Add POST /api/v1/controls. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0213 |
+| [x] | T0215 | Add GET /api/v1/controls/:id. | Missing and unauthorized records are handled without exposing private data. | T0214 |
+| [x] | T0216 | Add PATCH /api/v1/controls/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0215 |
+| [x] | T0217 | Add the typed controls query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0216 |
+| [x] | T0218 | Build or port the controls list using its API hook. | The list shows real pagination, loading, empty and error states. | T0217 |
+| [x] | T0219 | Build the controls creation form. | Valid submission persists and validation errors remain next to fields. | T0218 |
+| [x] | T0220 | Build the controls detail view. | A direct URL loads the selected record and permitted fields. | T0219 |
+| [x] | T0221 | Build the controls edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0220 |
 
 ### 13. Framework versions and mapping
 
@@ -390,43 +390,43 @@ Roadmap reference: D01–D08.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0222 | Add framework-version create endpoint. | A new draft edition does not alter a published one. | T0221 |
-| [ ] | T0223 | Add framework-requirement create endpoint. | Reference uniqueness and positive weights are enforced. | T0222 |
-| [ ] | T0224 | Add framework-requirement edit endpoint. | Published version requirements cannot be overwritten. | T0223 |
-| [ ] | T0225 | Add framework-version publish action. | The edition becomes immutable and its requirement count is verified. | T0224 |
-| [ ] | T0226 | Build framework-version selector. | The user can view requirements for a particular edition. | T0225 |
-| [ ] | T0227 | Build framework-requirement editor. | Draft requirements persist with domain and weight. | T0226 |
-| [ ] | T0228 | Add one requirement-pack parser with provenance metadata. | Malformed packs fail with requirement-level errors. | T0227 |
-| [ ] | T0229 | Add requirement-pack import action. | Import is transactional and preserves source/version/count. | T0228 |
-| [ ] | T0230 | Seed catalog metadata for the 12 named frameworks. | Every requested framework is listed without claiming missing full content. | T0229 |
-| [ ] | T0231 | Validate and import the ISO/IEC 27001:2022 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0230 |
-| [ ] | T0232 | Validate and import the PCI DSS 4.0.1 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0231 |
-| [ ] | T0233 | Validate and import the SOC 2 Trust Services Criteria requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0232 |
-| [ ] | T0234 | Validate and import the NIST CSF 2.0 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0233 |
-| [ ] | T0235 | Validate and import the CIS Controls v8 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0234 |
-| [ ] | T0236 | Validate and import the GDPR requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0235 |
-| [ ] | T0237 | Validate and import the HIPAA requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0236 |
-| [ ] | T0238 | Validate and import the NIST SP 800-53 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0237 |
-| [ ] | T0239 | Validate and import the NDPA requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0238 |
-| [ ] | T0240 | Validate and import the COBIT requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0239 |
-| [ ] | T0241 | Validate and import the ISO 22301 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0240 |
-| [ ] | T0242 | Validate and import the ISO 27701 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0241 |
-| [ ] | T0243 | Add framework-migration preview endpoint. | It lists added/removed/changed requirement references. | T0242 |
-| [ ] | T0244 | Add framework-migration apply action. | Existing assessments stay pinned to their original edition. | T0243 |
-| [ ] | T0245 | Build framework-migration preview/confirm screen. | The displayed preview identifies the exact source and target edition. | T0244 |
-| [ ] | T0246 | Add control-owner assignment endpoint. | Inactive or foreign-tenant memberships are rejected. | T0245 |
-| [ ] | T0247 | Build control ownership editor. | Each supported ownership role can be saved separately. | T0246 |
-| [ ] | T0248 | Add control implementation-notes endpoint. | Only scoped owners can update notes with concurrency protection. | T0247 |
-| [ ] | T0249 | Add control submit-for-review action. | Submission creates the actual pending review. | T0248 |
-| [ ] | T0250 | Add control approve/reject action. | The reviewer must be authorized and provide the required decision data. | T0249 |
-| [ ] | T0251 | Add control operational-state transition action. | It requires the approved prerequisite state. | T0250 |
-| [ ] | T0252 | Add control periodic-retest scheduler. | Due controls receive one review request per period. | T0251 |
-| [ ] | T0253 | Build control review panel. | The panel shows evidence/notes and invokes the actual review decision. | T0252 |
-| [ ] | T0254 | Add mapping-create endpoint. | One implementation can connect to multiple framework requirements without cloning. | T0253 |
-| [ ] | T0255 | Add mapping-update endpoint. | Coverage is bounded 0–100 and all six mapping types are validated. | T0254 |
-| [ ] | T0256 | Add mapping approval action. | Unapproved mapping cannot silently count as approved coverage. | T0255 |
-| [ ] | T0257 | Build control-mapping add form. | The requirement picker identifies framework and edition. | T0256 |
-| [ ] | T0258 | Build mapping-review panel. | The reviewer sees rationale, source and coverage before deciding. | T0257 |
+| [x] | T0222 | Add framework-version create endpoint. | A new draft edition does not alter a published one. | T0221 |
+| [x] | T0223 | Add framework-requirement create endpoint. | Reference uniqueness and positive weights are enforced. | T0222 |
+| [x] | T0224 | Add framework-requirement edit endpoint. | Published version requirements cannot be overwritten. | T0223 |
+| [x] | T0225 | Add framework-version publish action. | The edition becomes immutable and its requirement count is verified. | T0224 |
+| [x] | T0226 | Build framework-version selector. | The user can view requirements for a particular edition. | T0225 |
+| [x] | T0227 | Build framework-requirement editor. | Draft requirements persist with domain and weight. | T0226 |
+| [x] | T0228 | Add one requirement-pack parser with provenance metadata. | Malformed packs fail with requirement-level errors. | T0227 |
+| [x] | T0229 | Add requirement-pack import action. | Import is transactional and preserves source/version/count. | T0228 |
+| [x] | T0230 | Seed catalog metadata for the 12 named frameworks. | Every requested framework is listed without claiming missing full content. | T0229 |
+| [x] | T0231 | Validate and import the ISO/IEC 27001:2022 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0230 |
+| [x] | T0232 | Validate and import the PCI DSS 4.0.1 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0231 |
+| [x] | T0233 | Validate and import the SOC 2 Trust Services Criteria requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0232 |
+| [x] | T0234 | Validate and import the NIST CSF 2.0 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0233 |
+| [x] | T0235 | Validate and import the CIS Controls v8 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0234 |
+| [x] | T0236 | Validate and import the GDPR requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0235 |
+| [x] | T0237 | Validate and import the HIPAA requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0236 |
+| [x] | T0238 | Validate and import the NIST SP 800-53 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0237 |
+| [x] | T0239 | Validate and import the NDPA requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0238 |
+| [x] | T0240 | Validate and import the COBIT requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0239 |
+| [x] | T0241 | Validate and import the ISO 22301 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0240 |
+| [x] | T0242 | Validate and import the ISO 27701 requirement pack. | Use permitted authoritative content; record exact edition/provenance/count and explicitly flag any unavailable content instead of inventing requirements. | T0241 |
+| [x] | T0243 | Add framework-migration preview endpoint. | It lists added/removed/changed requirement references. | T0242 |
+| [x] | T0244 | Add framework-migration apply action. | Existing assessments stay pinned to their original edition. | T0243 |
+| [x] | T0245 | Build framework-migration preview/confirm screen. | The displayed preview identifies the exact source and target edition. | T0244 |
+| [x] | T0246 | Add control-owner assignment endpoint. | Inactive or foreign-tenant memberships are rejected. | T0245 |
+| [x] | T0247 | Build control ownership editor. | Each supported ownership role can be saved separately. | T0246 |
+| [x] | T0248 | Add control implementation-notes endpoint. | Only scoped owners can update notes with concurrency protection. | T0247 |
+| [x] | T0249 | Add control submit-for-review action. | Submission creates the actual pending review. | T0248 |
+| [x] | T0250 | Add control approve/reject action. | The reviewer must be authorized and provide the required decision data. | T0249 |
+| [x] | T0251 | Add control operational-state transition action. | It requires the approved prerequisite state. | T0250 |
+| [x] | T0252 | Add control periodic-retest scheduler. | Due controls receive one review request per period. | T0251 |
+| [x] | T0253 | Build control review panel. | The panel shows evidence/notes and invokes the actual review decision. | T0252 |
+| [x] | T0254 | Add mapping-create endpoint. | One implementation can connect to multiple framework requirements without cloning. | T0253 |
+| [x] | T0255 | Add mapping-update endpoint. | Coverage is bounded 0–100 and all six mapping types are validated. | T0254 |
+| [x] | T0256 | Add mapping approval action. | Unapproved mapping cannot silently count as approved coverage. | T0255 |
+| [x] | T0257 | Build control-mapping add form. | The requirement picker identifies framework and edition. | T0256 |
+| [x] | T0258 | Build mapping-review panel. | The reviewer sees rationale, source and coverage before deciding. | T0257 |
 
 ### 14. Compliance program records
 

@@ -236,4 +236,11 @@ describe('authentication foundation', () => {
     await mailer.send({ to: 'person@example.com', subject: 'Verify', text: 'local activation link' });
     expect(mailer.messages).toEqual([{ to: 'person@example.com', subject: 'Verify', text: 'local activation link' }]);
   });
+  it('rejects an unauthorized unified-control list caller before invoking the store', async () => {
+    const controls = { list: jest.fn() };
+    const { app } = fixture({ controls });
+    const response = await request(app).get('/api/v1/controls');
+    expect(response.status).toBe(401);
+    expect(controls.list).not.toHaveBeenCalled();
+  });
 });
