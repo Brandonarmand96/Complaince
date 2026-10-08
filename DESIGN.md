@@ -19,5 +19,5 @@ ComplyOS uses an Operate-mode application shell optimized for repeated complianc
 
 - Framework choices always display framework, edition, lifecycle state, and requirement identity in that order.
 - Migration requires discoverable program/source/target selectors, a source-to-target preview, an explicit confirmation, and completion feedback.
-- Mapping review keeps edition-qualified requirement identity, rationale, provenance source, coverage, and approval state visible together.
+- Mapping review keeps edition-qualified requirement identity, rationale, provenance source, coverage, approval state, and the latest reviewer comment and decision time visible together.
 - Destructive or irreversible lifecycle actions are visually secondary until their prerequisites are satisfied.

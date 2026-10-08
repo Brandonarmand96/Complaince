@@ -10,5 +10,5 @@ Product rules:
 - Published editions and their requirements are immutable. New work occurs in a draft edition.
 - Requirement content is imported only with source, edition, retrieval date, declared count, and validation. Unavailable or licensed content is flagged, never invented.
 - Assessments remain pinned to their original edition when a program migrates.
-- Control review and mapping approval are explicit states. Draft or rejected mappings never count as approved coverage.
+- Control review and mapping approval are explicit states. Approve or reject decisions require a reviewer comment and retain the latest comment and review timestamp; draft or rejected mappings never count as approved coverage.
 - Every sensitive mutation is permission-checked, audited where applicable, and protected from stale edits.
