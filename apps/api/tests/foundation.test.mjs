@@ -12,6 +12,9 @@ import { departmentStore } from '@complyos/runtime/departments';
 import { locationStore } from '@complyos/runtime/locations';
 import { frameworkStore } from '@complyos/runtime/frameworks';
 import { TenantAccessDenied } from '@complyos/runtime/authorization';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
+import { ComplianceProgramCreateDto, ComplianceProgramPatchDto } from '../dist/dto.js';
 const authConfig = { accessSecret: 'test-secret-that-is-at-least-32-characters-long', issuer: 'test-issuer', audience: 'test-audience', accessTtlSeconds: 900, refreshTtlSeconds: 3600 };
 function fixture(overrides = {}) {
   const entries = [];
@@ -21,6 +24,15 @@ function fixture(overrides = {}) {
   return { app: createApp(deps), deps, entries };
 }
 describe('foundation API', () => {
+  it('strictly validates compliance-program create and patch DTOs', async () => {
+    const valid={name:'ISO 27001 Program',frameworkVersionId:'11111111-1111-4111-8111-111111111111',ownerMembershipId:'22222222-2222-4222-8222-222222222222',scope:{businessUnitIds:['33333333-3333-4333-8333-333333333333'],dataTypes:['Customer PII']},startDate:'2026-01-01',endDate:'2026-12-31',assessmentType:'CERTIFICATION',stage:'PLANNING',status:'DRAFT'};
+    await expect(validate(plainToInstance(ComplianceProgramCreateDto,valid),{whitelist:true,forbidNonWhitelisted:true,forbidUnknownValues:true})).resolves.toHaveLength(0);
+    const invalid=plainToInstance(ComplianceProgramCreateDto,{name:'X',assessmentType:'SURPRISE',stage:'DONE',status:'OPEN',organizationId:'44444444-4444-4444-8444-444444444444',scope:{secret:true}});
+    const errors=await validate(invalid,{whitelist:true,forbidNonWhitelisted:true,forbidUnknownValues:true});
+    expect(errors.map(error=>error.property)).toEqual(expect.arrayContaining(['name','frameworkVersionId','ownerMembershipId','assessmentType','stage','status','organizationId','scope']));
+    const patchErrors=await validate(plainToInstance(ComplianceProgramPatchDto,{version:0,status:'ACTIVE',approvalState:'APPROVED'}),{whitelist:true,forbidNonWhitelisted:true,forbidUnknownValues:true});
+    expect(patchErrors.map(error=>error.property)).toEqual(expect.arrayContaining(['version','approvalState']));
+  });
   it('returns liveness with the same generated ID in response and log', async () => {
     const { app, entries } = fixture();
     const response = await request(app).get('/health/live').set('X-Request-Id', 'untrusted');

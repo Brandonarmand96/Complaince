@@ -1,4 +1,4 @@
-import { ArrayMaxSize, ArrayUnique, IsArray, IsBoolean, IsEmail, IsIn, IsInt, IsObject, IsOptional, IsString, IsUrl, IsUUID, Length, Matches, Max, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayUnique, IsArray, IsBoolean, IsDateString, IsEmail, IsIn, IsInt, IsObject, IsOptional, IsString, IsUrl, IsUUID, Length, Matches, Max, Min, ValidateNested } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 export class HealthJobDto {
   @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
@@ -157,3 +157,45 @@ export class MappingDecisionDto { @IsIn(['APPROVED','REJECTED']) decision!:'APPR
 export class RequirementPackImportDto { @IsObject() pack!:object; }
 export class MigrationApplyDto extends MigrationPreviewDto { @IsUUID() programId!:string; }
 export class OperationalStateDto { @IsIn(['PLANNED','PARTIAL','IMPLEMENTED','NOT_APPLICABLE']) status!:'PLANNED'|'PARTIAL'|'IMPLEMENTED'|'NOT_APPLICABLE'; }
+
+export const programAssessmentTypes = ['INTERNAL','EXTERNAL','SELF_ASSESSMENT','CERTIFICATION'] as const;
+export const programStages = ['PLANNING','READINESS','ASSESSMENT','REMEDIATION','COMPLETE'] as const;
+export const programStatuses = ['DRAFT','ACTIVE','ON_HOLD','COMPLETED','ARCHIVED'] as const;
+type ProgramAssessmentType = typeof programAssessmentTypes[number];
+type ProgramStage = typeof programStages[number];
+type ProgramStatus = typeof programStatuses[number];
+
+export class ComplianceProgramScopeDto {
+ @IsOptional() @IsArray() @ArrayMaxSize(500) @ArrayUnique() @IsUUID('4',{each:true}) businessUnitIds?:string[];
+ @IsOptional() @IsArray() @ArrayMaxSize(500) @ArrayUnique() @IsUUID('4',{each:true}) vendorIds?:string[];
+ @IsOptional() @IsArray() @ArrayMaxSize(500) @ArrayUnique() @IsString({each:true}) @Length(1,200,{each:true}) systems?:string[];
+ @IsOptional() @IsArray() @ArrayMaxSize(500) @ArrayUnique() @IsString({each:true}) @Length(1,200,{each:true}) applications?:string[];
+ @IsOptional() @IsArray() @ArrayMaxSize(500) @ArrayUnique() @IsString({each:true}) @Length(1,200,{each:true}) networks?:string[];
+ @IsOptional() @IsArray() @ArrayMaxSize(500) @ArrayUnique() @IsString({each:true}) @Length(1,200,{each:true}) processes?:string[];
+ @IsOptional() @IsArray() @ArrayMaxSize(100) @ArrayUnique() @IsString({each:true}) @Length(1,120,{each:true}) dataTypes?:string[];
+}
+
+export class ComplianceProgramCreateDto {
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,160) name!:string;
+ @IsUUID('4') frameworkVersionId!:string;
+ @IsUUID('4') ownerMembershipId!:string;
+ @IsOptional() @ValidateNested() @Type(()=>ComplianceProgramScopeDto) scope?:ComplianceProgramScopeDto;
+ @IsOptional() @IsDateString({strict:true}) startDate?:string;
+ @IsOptional() @IsDateString({strict:true}) endDate?:string;
+ @IsIn(programAssessmentTypes) assessmentType!:ProgramAssessmentType;
+ @IsIn(programStages) stage!:ProgramStage;
+ @IsIn(programStatuses) status!:ProgramStatus;
+}
+
+export class ComplianceProgramPatchDto {
+ @IsInt() @Min(1) version!:number;
+ @IsOptional() @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,160) name?:string;
+ @IsOptional() @IsUUID('4') frameworkVersionId?:string;
+ @IsOptional() @IsUUID('4') ownerMembershipId?:string;
+ @IsOptional() @ValidateNested() @Type(()=>ComplianceProgramScopeDto) scope?:ComplianceProgramScopeDto;
+ @IsOptional() @IsDateString({strict:true}) startDate?:string|null;
+ @IsOptional() @IsDateString({strict:true}) endDate?:string|null;
+ @IsOptional() @IsIn(programAssessmentTypes) assessmentType?:ProgramAssessmentType;
+ @IsOptional() @IsIn(programStages) stage?:ProgramStage;
+ @IsOptional() @IsIn(programStatuses) status?:ProgramStatus;
+}

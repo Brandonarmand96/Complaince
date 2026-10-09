@@ -434,7 +434,7 @@ Roadmap reference: D07–D08.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0259 | Add ComplianceProgram DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0258 |
+| [x] | T0259 | Add ComplianceProgram DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0258 |
 | [ ] | T0260 | Add GET /api/v1/programs with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0259 |
 | [ ] | T0261 | Add POST /api/v1/programs. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0260 |
 | [ ] | T0262 | Add GET /api/v1/programs/:id. | Missing and unauthorized records are handled without exposing private data. | T0261 |
