@@ -15,6 +15,9 @@ import { TenantAccessDenied } from '@complyos/runtime/authorization';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { ComplianceProgramCreateDto, ComplianceProgramPatchDto } from '../dist/dto.js';
+import { RiskCreateDto } from '../dist/dto.js';
+import { programStore } from '@complyos/runtime/programs';
+import { riskStore } from '@complyos/runtime/risks';
 const authConfig = { accessSecret: 'test-secret-that-is-at-least-32-characters-long', issuer: 'test-issuer', audience: 'test-audience', accessTtlSeconds: 900, refreshTtlSeconds: 3600 };
 function fixture(overrides = {}) {
   const entries = [];
@@ -33,6 +36,7 @@ describe('foundation API', () => {
     const patchErrors=await validate(plainToInstance(ComplianceProgramPatchDto,{version:0,status:'ACTIVE',approvalState:'APPROVED'}),{whitelist:true,forbidNonWhitelisted:true,forbidUnknownValues:true});
     expect(patchErrors.map(error=>error.property)).toEqual(expect.arrayContaining(['version','approvalState']));
   });
+  it('strictly validates risk DTO fields, categories and unknown input',async()=>{const valid={reference:'R-001',title:'Credential compromise',category:'CYBERSECURITY',threat:'Credential theft',vulnerability:'Weak authentication',ownerMembershipId:'22222222-2222-4222-8222-222222222222',reviewDate:'2026-12-01'};await expect(validate(plainToInstance(RiskCreateDto,valid),{whitelist:true,forbidNonWhitelisted:true,forbidUnknownValues:true})).resolves.toHaveLength(0);const errors=await validate(plainToInstance(RiskCreateDto,{reference:'',title:'X',category:'UNKNOWN',threat:'',vulnerability:'',ownerMembershipId:'bad',organizationId:'hidden'}),{whitelist:true,forbidNonWhitelisted:true,forbidUnknownValues:true});expect(errors.map(error=>error.property)).toEqual(expect.arrayContaining(['reference','title','category','threat','vulnerability','ownerMembershipId','organizationId']))});
   it('returns liveness with the same generated ID in response and log', async () => {
     const { app, entries } = fixture();
     const response = await request(app).get('/health/live').set('X-Request-Id', 'untrusted');
@@ -144,6 +148,22 @@ describe('foundation API', () => {
   it('denies department and location lists without active tenant context',async()=>{const db={query:jest.fn().mockResolvedValue({rows:[],rowCount:0}),connect:jest.fn()};await expect(departmentStore(db).list('user','session',{page:1,limit:20})).rejects.toBeInstanceOf(TenantAccessDenied);await expect(locationStore(db).list('user','session',{page:1,limit:20})).rejects.toBeInstanceOf(TenantAccessDenied);});
   it('validates and routes framework catalog CRUD',async()=>{const record={id:'88888888-8888-4888-8888-888888888888',organizationId:'org',name:'Security Baseline',publisher:'Acme',description:'Controls',ownership:'CUSTOM',version:1};const frameworks={list:jest.fn().mockResolvedValue({data:[record],total:1,page:1,limit:20}),create:jest.fn().mockResolvedValue(record),detail:jest.fn().mockResolvedValue(record),update:jest.fn().mockResolvedValue({...record,version:2})};const{app}=fixture({frameworks});const token=await issueAccessToken(authConfig,'user-id','22222222-2222-4222-8222-222222222222'),auth={Authorization:`Bearer ${token}`};expect((await request(app).get('/api/v1/frameworks?page=1&limit=20').set(auth)).body.total).toBe(1);expect((await request(app).post('/api/v1/frameworks').set(auth).send({name:'Security Baseline',publisher:'Acme',ownership:'CUSTOM'})).status).toBe(201);expect((await request(app).post('/api/v1/frameworks').set(auth).send({name:'S',publisher:'A',ownership:'TENANT',status:'ACTIVE'})).status).toBe(400);expect((await request(app).get(`/api/v1/frameworks/${record.id}`).set(auth)).status).toBe(200);expect((await request(app).patch(`/api/v1/frameworks/${record.id}`).set(auth).send({name:'Security Baseline 2',version:1})).body.version).toBe(2);});
   it('denies framework access without active tenant context',async()=>{const db={query:jest.fn().mockResolvedValue({rows:[],rowCount:0}),connect:jest.fn()};await expect(frameworkStore(db).list('user','session',{page:1,limit:20})).rejects.toBeInstanceOf(TenantAccessDenied);});
+  it('routes compliance-program CRUD and risk listing with bounded pagination',async()=>{
+    const program={id:'55555555-5555-4555-8555-555555555555',name:'ISO Program',frameworkVersionId:'11111111-1111-4111-8111-111111111111',ownerMembershipId:'22222222-2222-4222-8222-222222222222',assessmentType:'INTERNAL',stage:'PLANNING',status:'DRAFT',scope:{},version:1};
+    const programs={list:jest.fn().mockResolvedValue({data:[program],total:1,page:1,limit:20}),create:jest.fn().mockResolvedValue(program),detail:jest.fn().mockResolvedValue(program),update:jest.fn().mockResolvedValue({...program,name:'Updated',version:2}),options:jest.fn().mockResolvedValue({versions:[],owners:[]})},risks={list:jest.fn().mockResolvedValue({data:[],total:0,page:1,limit:20})};
+    const{app}=fixture({programs,risks}),token=await issueAccessToken(authConfig,'user-id','22222222-2222-4222-8222-222222222222'),auth={Authorization:`Bearer ${token}`};
+    expect((await request(app).get('/api/v1/programs?page=1&limit=20').set(auth)).body.total).toBe(1);
+    expect((await request(app).get('/api/v1/programs?limit=101').set(auth)).status).toBe(400);
+    expect((await request(app).get('/api/v1/programs')).status).toBe(401);
+    const body={name:'ISO Program',frameworkVersionId:program.frameworkVersionId,ownerMembershipId:program.ownerMembershipId,scope:{},assessmentType:'INTERNAL',stage:'PLANNING',status:'DRAFT'};
+    expect((await request(app).post('/api/v1/programs').set(auth).send(body)).status).toBe(201);
+    expect((await request(app).get(`/api/v1/programs/${program.id}`).set(auth)).body.name).toBe('ISO Program');
+    expect((await request(app).patch(`/api/v1/programs/${program.id}`).set(auth).send({name:'Updated',version:1})).body.version).toBe(2);
+    expect((await request(app).patch(`/api/v1/programs/${program.id}`).set(auth).send({stage:'COMPLETE',version:1})).status).toBe(400);
+    expect((await request(app).get('/api/v1/risks?page=1&limit=20').set(auth)).status).toBe(200);
+    expect((await request(app).get('/api/v1/risks?limit=101').set(auth)).status).toBe(400);
+  });
+  it('denies program and risk lists without an active tenant context',async()=>{const db={query:jest.fn().mockResolvedValue({rows:[],rowCount:0}),connect:jest.fn()};await expect(programStore(db).list('user','session',{page:1,limit:20})).rejects.toBeInstanceOf(TenantAccessDenied);await expect(riskStore(db).list('user','session',{page:1,limit:20})).rejects.toBeInstanceOf(TenantAccessDenied)});
 });
 describe('configuration and integration guard', () => {
   const env = { DATABASE_URL: 'postgresql://u:p@db.example/dev', REDIS_URL: 'rediss://u:p@cache.example:6379/0', ACCESS_JWT_SECRET: 'test-secret-that-is-at-least-32-characters-long' };

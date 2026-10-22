@@ -16,6 +16,8 @@ import { frameworkStore } from '@complyos/runtime/frameworks';
 import { controlStore } from '@complyos/runtime/controls';
 import { controlWorkflowStore } from '@complyos/runtime/control-workflows';
 import { requirementPackStore } from '@complyos/runtime/requirement-packs';
+import { programStore } from '@complyos/runtime/programs';
+import { riskStore } from '@complyos/runtime/risks';
 const logger = createLogger();
 try {
   const env = loadEnvironment();
@@ -26,7 +28,7 @@ try {
   const security = securityStore(db, env.auth.accessSecret);
   const app = createApp({
     checkDatabase: () => db.query('SELECT 1'), checkRedis: () => checkRedis(env.redisUrl),
-    submitJob: store.submit, listJobs: store.list, logger, webOrigin: env.webOrigin, nodeEnv: env.nodeEnv, auth, security, governance: governanceApi(db), organizations: organizationStore(db), businessUnits: businessUnitStore(db), departments: departmentStore(db), locations: locationStore(db), frameworks: frameworkStore(db), controls: controlStore(db), controlWorkflows: controlWorkflowStore(db), requirementPacks: requirementPackStore(db), authConfig: env.auth,
+    submitJob: store.submit, listJobs: store.list, logger, webOrigin: env.webOrigin, nodeEnv: env.nodeEnv, auth, security, governance: governanceApi(db), organizations: organizationStore(db), businessUnits: businessUnitStore(db), departments: departmentStore(db), locations: locationStore(db), frameworks: frameworkStore(db), controls: controlStore(db), programs: programStore(db), risks: riskStore(db), controlWorkflows: controlWorkflowStore(db), requirementPacks: requirementPackStore(db), authConfig: env.auth,
   });
   const server = app.listen(env.port, '127.0.0.1', () => logger.info({ port: env.port }, 'ComplyOS API started on 127.0.0.1.'));
   let closing = false;

@@ -10,5 +10,6 @@ Product rules:
 - Published editions and their requirements are immutable. New work occurs in a draft edition.
 - Requirement content is imported only with source, edition, retrieval date, declared count, and validation. Unavailable or licensed content is flagged, never invented.
 - Assessments remain pinned to their original edition when a program migrates.
+- Compliance programs are organization-scoped records pinned at creation to a published framework edition and an active accountable owner. Ordinary edits may change descriptive scope, schedule, owner, and assessment type, but not the pinned edition or lifecycle state; stale edits are rejected.
 - Control review and mapping approval are explicit states. Approve or reject decisions require a reviewer comment and retain the latest comment and review timestamp; draft or rejected mappings never count as approved coverage.
 - Every sensitive mutation is permission-checked, audited where applicable, and protected from stale edits.

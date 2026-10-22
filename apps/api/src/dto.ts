@@ -190,12 +190,33 @@ export class ComplianceProgramCreateDto {
 export class ComplianceProgramPatchDto {
  @IsInt() @Min(1) version!:number;
  @IsOptional() @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,160) name?:string;
- @IsOptional() @IsUUID('4') frameworkVersionId?:string;
  @IsOptional() @IsUUID('4') ownerMembershipId?:string;
  @IsOptional() @ValidateNested() @Type(()=>ComplianceProgramScopeDto) scope?:ComplianceProgramScopeDto;
  @IsOptional() @IsDateString({strict:true}) startDate?:string|null;
  @IsOptional() @IsDateString({strict:true}) endDate?:string|null;
  @IsOptional() @IsIn(programAssessmentTypes) assessmentType?:ProgramAssessmentType;
- @IsOptional() @IsIn(programStages) stage?:ProgramStage;
- @IsOptional() @IsIn(programStatuses) status?:ProgramStatus;
+}
+
+export const riskCategories=['STRATEGIC','OPERATIONAL','FINANCIAL','COMPLIANCE','CYBERSECURITY','PRIVACY','THIRD_PARTY','OTHER'] as const;
+type RiskCategory=typeof riskCategories[number];
+export class RiskCreateDto {
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(1,80) reference!:string;
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,240) title!:string;
+ @IsIn(riskCategories) category!:RiskCategory;
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,4000) threat!:string;
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,4000) vulnerability!:string;
+ @IsUUID('4') ownerMembershipId!:string;
+ @IsOptional() @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(1,240) process?:string;
+ @IsOptional() @IsDateString({strict:true}) reviewDate?:string|null;
+}
+export class RiskPatchDto {
+ @IsInt() @Min(1) version!:number;
+ @IsOptional() @IsString() @Length(1,80) reference?:string;
+ @IsOptional() @IsString() @Length(2,240) title?:string;
+ @IsOptional() @IsIn(riskCategories) category?:RiskCategory;
+ @IsOptional() @IsString() @Length(2,4000) threat?:string;
+ @IsOptional() @IsString() @Length(2,4000) vulnerability?:string;
+ @IsOptional() @IsUUID('4') ownerMembershipId?:string;
+ @IsOptional() @IsString() @Length(1,240) process?:string|null;
+ @IsOptional() @IsDateString({strict:true}) reviewDate?:string|null;
 }

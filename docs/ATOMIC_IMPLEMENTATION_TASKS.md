@@ -435,15 +435,15 @@ Roadmap reference: D07–D08.
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
 | [x] | T0259 | Add ComplianceProgram DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0258 |
-| [ ] | T0260 | Add GET /api/v1/programs with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0259 |
-| [ ] | T0261 | Add POST /api/v1/programs. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0260 |
-| [ ] | T0262 | Add GET /api/v1/programs/:id. | Missing and unauthorized records are handled without exposing private data. | T0261 |
-| [ ] | T0263 | Add PATCH /api/v1/programs/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0262 |
-| [ ] | T0264 | Add the typed programs query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0263 |
-| [ ] | T0265 | Build or port the programs list using its API hook. | The list shows real pagination, loading, empty and error states. | T0264 |
-| [ ] | T0266 | Build the programs creation form. | Valid submission persists and validation errors remain next to fields. | T0265 |
-| [ ] | T0267 | Build the programs detail view. | A direct URL loads the selected record and permitted fields. | T0266 |
-| [ ] | T0268 | Build the programs edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0267 |
+| [x] | T0260 | Add GET /api/v1/programs with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0259 |
+| [x] | T0261 | Add POST /api/v1/programs. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0260 |
+| [x] | T0262 | Add GET /api/v1/programs/:id. | Missing and unauthorized records are handled without exposing private data. | T0261 |
+| [x] | T0263 | Add PATCH /api/v1/programs/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0262 |
+| [x] | T0264 | Add the typed programs query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0263 |
+| [x] | T0265 | Build or port the programs list using its API hook. | The list shows real pagination, loading, empty and error states. | T0264 |
+| [x] | T0266 | Build the programs creation form. | Valid submission persists and validation errors remain next to fields. | T0265 |
+| [x] | T0267 | Build the programs detail view. | A direct URL loads the selected record and permitted fields. | T0266 |
+| [x] | T0268 | Build the programs edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0267 |
 
 ### 15. Risk register records
 
@@ -451,8 +451,8 @@ Roadmap reference: F08–F10.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0269 | Add Risk DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0268 |
-| [ ] | T0270 | Add GET /api/v1/risks with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0269 |
+| [x] | T0269 | Add Risk DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0268 |
+| [x] | T0270 | Add GET /api/v1/risks with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0269 |
 | [ ] | T0271 | Add POST /api/v1/risks. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0270 |
 | [ ] | T0272 | Add GET /api/v1/risks/:id. | Missing and unauthorized records are handled without exposing private data. | T0271 |
 | [ ] | T0273 | Add PATCH /api/v1/risks/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0272 |

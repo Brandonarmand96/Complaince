@@ -38,6 +38,9 @@ import { ControlsPage } from '@/pages/ControlsPage';
 import { ControlFormPage } from '@/pages/ControlFormPage';
 import { ControlDetailPage } from '@/pages/ControlDetailPage';
 import { FrameworkMigrationPage } from '@/pages/FrameworkMigrationPage';
+import { ProgramsPage } from '@/pages/ProgramsPage';
+import { ProgramFormPage } from '@/pages/ProgramFormPage';
+import { ProgramDetailPage } from '@/pages/ProgramDetailPage';
 function ProtectedShell() { const { user, loading } = useAuth(); if (loading) return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Restoring your session…</div>; return user ? <AppShell /> : <Navigate to="/login" replace />; }
 
 export function App() {
@@ -82,12 +85,16 @@ export function App() {
           <Route path="frameworks/:id" element={<FrameworkDetailPage />} />
           <Route path="frameworks/:id/edit" element={<FrameworkFormPage mode="edit" />} />
           <Route path="framework-migrations" element={<FrameworkMigrationPage />} />
+          <Route path="programs" element={<ProgramsPage />} />
+          <Route path="programs/new" element={<ProgramFormPage mode="create" />} />
+          <Route path="programs/:id" element={<ProgramDetailPage />} />
+          <Route path="programs/:id/edit" element={<ProgramFormPage mode="edit" />} />
           <Route path="controls" element={<ControlsPage />} />
           <Route path="controls/new" element={<ControlFormPage mode="create" />} />
           <Route path="controls/:id" element={<ControlDetailPage />} />
           <Route path="controls/:id/edit" element={<ControlFormPage mode="edit" />} />
           {navSections.flatMap((section) => section.items)
-            .filter((item) => !['/dashboard','/settings/workflows','/approvals','/organizations','/business-units','/departments','/locations','/frameworks','/controls'].includes(item.href))
+            .filter((item) => !['/dashboard','/settings/workflows','/approvals','/organizations','/business-units','/departments','/locations','/frameworks','/controls','/programs'].includes(item.href))
             .map((item) => (
               <Route key={item.href} path={item.href} element={
                 <div className="space-y-2">
