@@ -1,4 +1,4 @@
-import { ArrayMaxSize, ArrayUnique, IsArray, IsBoolean, IsDateString, IsEmail, IsIn, IsInt, IsObject, IsOptional, IsString, IsUrl, IsUUID, Length, Matches, Max, Min, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayUnique, IsArray, IsBoolean, IsDateString, IsEmail, IsIn, IsInt, IsIP, IsObject, IsOptional, IsString, IsUrl, IsUUID, Length, Matches, Max, Min, ValidateNested } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 export class HealthJobDto {
   @Transform(({ value }: { value: unknown }) => typeof value === 'string' ? value.trim() : value)
@@ -220,3 +220,156 @@ export class RiskPatchDto {
  @IsOptional() @IsString() @Length(1,240) process?:string|null;
  @IsOptional() @IsDateString({strict:true}) reviewDate?:string|null;
 }
+
+export const assetTypes=['HARDWARE','SOFTWARE','DATA','SERVICE','FACILITY','OTHER'] as const;
+export const assetEnvironments=['PRODUCTION','STAGING','DEVELOPMENT','TEST','OTHER'] as const;
+export const informationClassifications=['PUBLIC','INTERNAL','CONFIDENTIAL','RESTRICTED'] as const;
+export const criticalities=['LOW','MEDIUM','HIGH','CRITICAL'] as const;
+export class AssetCreateDto {
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,160) name!:string;
+ @IsIn(assetTypes) type!:typeof assetTypes[number];
+ @IsUUID('4') ownerMembershipId!:string;
+ @IsOptional() @IsUUID('4') custodianMembershipId?:string|null;
+ @IsOptional() @IsUUID('4') departmentId?:string|null;
+ @IsOptional() @IsUUID('4') locationId?:string|null;
+ @IsOptional() @IsIP() ipAddress?:string|null;
+ @IsOptional() @IsString() @Length(1,253) @Matches(/^(?=.{1,253}$)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)(?:\.(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?))*$/) hostname?:string|null;
+ @IsOptional() @IsString() @Length(1,160) serialNumber?:string|null;
+ @IsOptional() @IsString() @Length(1,160) operatingSystem?:string|null;
+ @IsOptional() @IsIn(assetEnvironments) environment?:typeof assetEnvironments[number]|null;
+ @IsIn(informationClassifications) classification!:typeof informationClassifications[number];
+ @IsIn(criticalities) criticality!:typeof criticalities[number];
+}
+export class AssetPatchDto {
+ @IsInt() @Min(1) version!:number;
+ @IsOptional() @IsString() @Length(2,160) name?:string;
+ @IsOptional() @IsIn(assetTypes) type?:typeof assetTypes[number];
+ @IsOptional() @IsUUID('4') ownerMembershipId?:string;
+ @IsOptional() @IsUUID('4') custodianMembershipId?:string|null;
+ @IsOptional() @IsUUID('4') departmentId?:string|null;
+ @IsOptional() @IsUUID('4') locationId?:string|null;
+ @IsOptional() @IsIP() ipAddress?:string|null;
+ @IsOptional() @IsString() @Length(1,253) hostname?:string|null;
+ @IsOptional() @IsString() @Length(1,160) serialNumber?:string|null;
+ @IsOptional() @IsString() @Length(1,160) operatingSystem?:string|null;
+ @IsOptional() @IsIn(assetEnvironments) environment?:typeof assetEnvironments[number]|null;
+ @IsOptional() @IsIn(informationClassifications) classification?:typeof informationClassifications[number];
+ @IsOptional() @IsIn(criticalities) criticality?:typeof criticalities[number];
+}
+export class VendorContactDto {
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,100) name!:string;
+ @IsOptional() @IsEmail() @Length(3,254) email?:string;
+ @IsOptional() @IsString() @Length(5,40) phone?:string;
+}
+export class VendorCreateDto {
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,160) name!:string;
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,500) service!:string;
+ @IsUUID('4') businessOwnerMembershipId!:string;
+ @IsArray() @ArrayMaxSize(20) @ValidateNested({each:true}) @Type(()=>VendorContactDto) contacts!:VendorContactDto[];
+ @IsArray() @ArrayMaxSize(100) @ArrayUnique() @IsString({each:true}) countries!:string[];
+ @IsArray() @ArrayMaxSize(100) @ArrayUnique() @IsString({each:true}) dataAccess!:string[];
+ @IsArray() @ArrayMaxSize(100) @ArrayUnique() @IsString({each:true}) systemAccess!:string[];
+ @IsOptional() @IsDateString({strict:true}) contractStartDate?:string|null;
+ @IsOptional() @IsDateString({strict:true}) contractEndDate?:string|null;
+}
+export class VendorPatchDto {
+ @IsInt() @Min(1) version!:number;
+ @IsOptional() @IsString() @Length(2,160) name?:string;
+ @IsOptional() @IsString() @Length(2,500) service?:string;
+ @IsOptional() @IsUUID('4') businessOwnerMembershipId?:string;
+ @IsOptional() @IsArray() @ArrayMaxSize(20) @ValidateNested({each:true}) @Type(()=>VendorContactDto) contacts?:VendorContactDto[];
+ @IsOptional() @IsArray() @ArrayMaxSize(100) @ArrayUnique() @IsString({each:true}) countries?:string[];
+ @IsOptional() @IsArray() @ArrayMaxSize(100) @ArrayUnique() @IsString({each:true}) dataAccess?:string[];
+ @IsOptional() @IsArray() @ArrayMaxSize(100) @ArrayUnique() @IsString({each:true}) systemAccess?:string[];
+ @IsOptional() @IsDateString({strict:true}) contractStartDate?:string|null;
+ @IsOptional() @IsDateString({strict:true}) contractEndDate?:string|null;
+}
+export const findingTypes=['AUDIT','ASSESSMENT','INCIDENT','CONTROL_TEST','OTHER'] as const;
+export const findingSeverities=['LOW','MEDIUM','HIGH','CRITICAL'] as const;
+export class FindingCreateDto {
+ @IsIn(findingTypes) type!:typeof findingTypes[number];
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,240) title!:string;
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,8000) description!:string;
+ @IsIn(findingSeverities) severity!:typeof findingSeverities[number];
+ @IsOptional() @IsString() @Length(1,4000) impact?:string|null;
+ @IsUUID('4') ownerMembershipId!:string;
+ @IsOptional() @IsDateString({strict:true}) dueDate?:string|null;
+ @IsOptional() @IsString() @Length(1,8000) managementResponse?:string|null;
+}
+export class FindingPatchDto {
+ @IsInt() @Min(1) version!:number;
+ @IsOptional() @IsIn(findingTypes) type?:typeof findingTypes[number];
+ @IsOptional() @IsString() @Length(2,240) title?:string;
+ @IsOptional() @IsString() @Length(2,8000) description?:string;
+ @IsOptional() @IsIn(findingSeverities) severity?:typeof findingSeverities[number];
+ @IsOptional() @IsString() @Length(1,4000) impact?:string|null;
+ @IsOptional() @IsUUID('4') ownerMembershipId?:string;
+ @IsOptional() @IsDateString({strict:true}) dueDate?:string|null;
+ @IsOptional() @IsString() @Length(1,8000) managementResponse?:string|null;
+}
+export const taskTypes=['REMEDIATION','REVIEW','EVIDENCE','IMPLEMENTATION','OTHER'] as const;
+export const taskPriorities=['LOW','MEDIUM','HIGH','URGENT'] as const;
+export const taskStatuses=['TODO','IN_PROGRESS','BLOCKED','COMPLETED','CANCELED'] as const;
+export class TaskCreateDto {
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,240) title!:string;
+ @IsOptional() @IsString() @Length(1,8000) description?:string|null;
+ @IsIn(taskTypes) type!:typeof taskTypes[number];
+ @IsIn(taskPriorities) priority!:typeof taskPriorities[number];
+ @IsUUID('4') ownerMembershipId!:string;
+ @IsOptional() @IsDateString({strict:true}) dueDate?:string|null;
+ @IsOptional() @IsInt() @Min(0) @Max(100) progress?:number;
+ @IsIn(taskStatuses) status!:typeof taskStatuses[number];
+}
+export class TaskPatchDto {
+ @IsInt() @Min(1) version!:number;
+ @IsOptional() @IsString() @Length(2,240) title?:string;
+ @IsOptional() @IsString() @Length(1,8000) description?:string|null;
+ @IsOptional() @IsIn(taskTypes) type?:typeof taskTypes[number];
+ @IsOptional() @IsIn(taskPriorities) priority?:typeof taskPriorities[number];
+ @IsOptional() @IsUUID('4') ownerMembershipId?:string;
+ @IsOptional() @IsDateString({strict:true}) dueDate?:string|null;
+ @IsOptional() @IsInt() @Min(0) @Max(100) progress?:number;
+ @IsOptional() @IsIn(taskStatuses) status?:typeof taskStatuses[number];
+}
+export class PolicyCreateDto {
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(1,80) number!:string;
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,240) title!:string;
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,120) category!:string;
+ @IsUUID('4') authorMembershipId!:string; @IsUUID('4') ownerMembershipId!:string;
+ @IsOptional() @IsUUID('4') approverMembershipId?:string|null;
+ @IsIn(informationClassifications) classification!:typeof informationClassifications[number];
+ @IsOptional() @IsDateString({strict:true}) effectiveDate?:string|null; @IsOptional() @IsDateString({strict:true}) reviewDate?:string|null;
+}
+export class PolicyPatchDto {
+ @IsInt() @Min(1) version!:number;
+ @IsOptional() @IsString() @Length(1,80) number?:string; @IsOptional() @IsString() @Length(2,240) title?:string; @IsOptional() @IsString() @Length(2,120) category?:string;
+ @IsOptional() @IsUUID('4') authorMembershipId?:string; @IsOptional() @IsUUID('4') ownerMembershipId?:string; @IsOptional() @IsUUID('4') approverMembershipId?:string|null;
+ @IsOptional() @IsIn(informationClassifications) classification?:typeof informationClassifications[number];
+ @IsOptional() @IsDateString({strict:true}) effectiveDate?:string|null; @IsOptional() @IsDateString({strict:true}) reviewDate?:string|null;
+}
+export const auditTypes=['INTERNAL','EXTERNAL','REGULATORY','CERTIFICATION','OTHER'] as const;
+export const auditStatuses=['PLANNED','IN_PROGRESS','REPORTING','COMPLETED','CANCELED'] as const;
+export class AuditCreateDto {
+ @Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,240) title!:string;
+ @IsIn(auditTypes) type!:typeof auditTypes[number];
+ @IsObject() scope!:Record<string,unknown>;
+ @IsArray() @ArrayMaxSize(100) @IsString({each:true}) objectives!:string[];
+ @IsArray() @ArrayMaxSize(100) @IsString({each:true}) criteria!:string[];
+ @IsUUID('4') leadAuditorMembershipId!:string;
+ @IsOptional() @IsDateString({strict:true}) startDate?:string|null; @IsOptional() @IsDateString({strict:true}) endDate?:string|null;
+ @IsIn(auditStatuses) status!:typeof auditStatuses[number];
+}
+export class AuditPatchDto {
+ @IsInt() @Min(1) version!:number;
+ @IsOptional() @IsString() @Length(2,240) title?:string; @IsOptional() @IsIn(auditTypes) type?:typeof auditTypes[number];
+ @IsOptional() @IsObject() scope?:Record<string,unknown>; @IsOptional() @IsArray() @ArrayMaxSize(100) @IsString({each:true}) objectives?:string[]; @IsOptional() @IsArray() @ArrayMaxSize(100) @IsString({each:true}) criteria?:string[];
+ @IsOptional() @IsUUID('4') leadAuditorMembershipId?:string; @IsOptional() @IsDateString({strict:true}) startDate?:string|null; @IsOptional() @IsDateString({strict:true}) endDate?:string|null;
+ @IsOptional() @IsIn(auditStatuses) status?:typeof auditStatuses[number];
+}
+export class RoleCreateDto {@Transform(({value}:{value:unknown})=>typeof value==='string'?value.trim():value) @IsString() @Length(2,100) name!:string;@IsOptional() @IsString() @Length(1,500) description?:string;@IsArray() @ArrayUnique() @IsString({each:true}) permissions!:string[]}
+export class RolePermissionsDto {@IsArray() @ArrayUnique() @IsString({each:true}) permissions!:string[]}
+export class MembershipRoleDto {@IsUUID('4') roleId!:string}
+export class OrganizationSettingsDto {@IsInt() @Min(1) version!:number;@IsIn(['YYYY-MM-DD','DD/MM/YYYY','MM/DD/YYYY']) dateFormat!:string;@Matches(/^[A-Z]{3}$/) currency!:string;@IsInt() @Min(30) @Max(36500) retentionDays!:number;@Matches(/^#[0-9a-fA-F]{6}$/) brandColor!:string;@IsBoolean() requireMfa!:boolean;@IsBoolean() emailNotifications!:boolean}
+export class OrganizationLogoDto {@IsString() @Length(30,700000) logoDataUrl!:string}
+export class SupportRequestDto {@IsUUID('4') organizationId!:string;@IsArray() @ArrayUnique() @ArrayMaxSize(50) @IsString({each:true}) resources!:string[];@IsString() @Length(10,2000) reason!:string;@IsDateString() expiresAt!:string}
+export class SupportDecisionDto {@IsIn(['APPROVED','REJECTED']) status!:'APPROVED'|'REJECTED'}

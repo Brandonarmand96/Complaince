@@ -41,6 +41,31 @@ import { FrameworkMigrationPage } from '@/pages/FrameworkMigrationPage';
 import { ProgramsPage } from '@/pages/ProgramsPage';
 import { ProgramFormPage } from '@/pages/ProgramFormPage';
 import { ProgramDetailPage } from '@/pages/ProgramDetailPage';
+import { RisksPage } from '@/pages/RisksPage';
+import { RiskFormPage } from '@/pages/RiskFormPage';
+import { RiskDetailPage } from '@/pages/RiskDetailPage';
+import { AssetsPage } from '@/pages/AssetsPage';
+import { AssetFormPage } from '@/pages/AssetFormPage';
+import { AssetDetailPage } from '@/pages/AssetDetailPage';
+import { VendorsPage } from '@/pages/VendorsPage';
+import { VendorFormPage } from '@/pages/VendorFormPage';
+import { VendorDetailPage } from '@/pages/VendorDetailPage';
+import { FindingsPage } from '@/pages/FindingsPage';
+import { FindingFormPage } from '@/pages/FindingFormPage';
+import { FindingDetailPage } from '@/pages/FindingDetailPage';
+import { TasksPage } from '@/pages/TasksPage';
+import { TaskFormPage } from '@/pages/TaskFormPage';
+import { TaskDetailPage } from '@/pages/TaskDetailPage';
+import { PoliciesPage } from '@/pages/PoliciesPage';
+import { PolicyFormPage } from '@/pages/PolicyFormPage';
+import { PolicyDetailPage } from '@/pages/PolicyDetailPage';
+import { AuditsPage } from '@/pages/AuditsPage';
+import { AuditFormPage } from '@/pages/AuditFormPage';
+import { AuditDetailPage } from '@/pages/AuditDetailPage';
+import { RolesPage } from '@/pages/RolesPage';
+import { UserDirectoryPage } from '@/pages/UserDirectoryPage';
+import { SettingsPage } from '@/pages/SettingsPage';
+import { PlatformAdministrationPage } from '@/pages/PlatformAdministrationPage';
 function ProtectedShell() { const { user, loading } = useAuth(); if (loading) return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Restoring your session…</div>; return user ? <AppShell /> : <Navigate to="/login" replace />; }
 
 export function App() {
@@ -89,12 +114,44 @@ export function App() {
           <Route path="programs/new" element={<ProgramFormPage mode="create" />} />
           <Route path="programs/:id" element={<ProgramDetailPage />} />
           <Route path="programs/:id/edit" element={<ProgramFormPage mode="edit" />} />
+          <Route path="risks" element={<RisksPage />} />
+          <Route path="risks/new" element={<RiskFormPage mode="create" />} />
+          <Route path="risks/:id" element={<RiskDetailPage />} />
+          <Route path="risks/:id/edit" element={<RiskFormPage mode="edit" />} />
+          <Route path="assets" element={<AssetsPage />} />
+          <Route path="assets/new" element={<AssetFormPage mode="create" />} />
+          <Route path="assets/:id" element={<AssetDetailPage />} />
+          <Route path="assets/:id/edit" element={<AssetFormPage mode="edit" />} />
+          <Route path="vendors" element={<VendorsPage />} />
+          <Route path="vendors/new" element={<VendorFormPage mode="create" />} />
+          <Route path="vendors/:id" element={<VendorDetailPage />} />
+          <Route path="vendors/:id/edit" element={<VendorFormPage mode="edit" />} />
+          <Route path="findings" element={<FindingsPage />} />
+          <Route path="findings/new" element={<FindingFormPage mode="create" />} />
+          <Route path="findings/:id" element={<FindingDetailPage />} />
+          <Route path="findings/:id/edit" element={<FindingFormPage mode="edit" />} />
+          <Route path="tasks" element={<TasksPage />} />
+          <Route path="tasks/new" element={<TaskFormPage mode="create" />} />
+          <Route path="tasks/:id" element={<TaskDetailPage />} />
+          <Route path="tasks/:id/edit" element={<TaskFormPage mode="edit" />} />
+          <Route path="policies" element={<PoliciesPage />} />
+          <Route path="policies/new" element={<PolicyFormPage mode="create" />} />
+          <Route path="policies/:id" element={<PolicyDetailPage />} />
+          <Route path="policies/:id/edit" element={<PolicyFormPage mode="edit" />} />
+          <Route path="audits" element={<AuditsPage />} />
+          <Route path="audits/new" element={<AuditFormPage mode="create" />} />
+          <Route path="audits/:id" element={<AuditDetailPage />} />
+          <Route path="audits/:id/edit" element={<AuditFormPage mode="edit" />} />
+          <Route path="users" element={<UserDirectoryPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings/roles" element={<RolesPage />} />
+          <Route path="platform/organizations" element={<PlatformAdministrationPage />} />
           <Route path="controls" element={<ControlsPage />} />
           <Route path="controls/new" element={<ControlFormPage mode="create" />} />
           <Route path="controls/:id" element={<ControlDetailPage />} />
           <Route path="controls/:id/edit" element={<ControlFormPage mode="edit" />} />
           {navSections.flatMap((section) => section.items)
-            .filter((item) => !['/dashboard','/settings/workflows','/approvals','/organizations','/business-units','/departments','/locations','/frameworks','/controls','/programs'].includes(item.href))
+            .filter((item) => !['/dashboard','/settings/workflows','/approvals','/organizations','/business-units','/departments','/locations','/frameworks','/controls','/programs','/risks','/assets','/vendors','/findings','/tasks','/policies','/audits','/users','/settings'].includes(item.href))
             .map((item) => (
               <Route key={item.href} path={item.href} element={
                 <div className="space-y-2">

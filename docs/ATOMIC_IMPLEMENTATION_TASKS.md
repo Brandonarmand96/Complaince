@@ -453,14 +453,14 @@ Roadmap reference: F08–F10.
 | --- | --- | --- | --- | --- |
 | [x] | T0269 | Add Risk DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0268 |
 | [x] | T0270 | Add GET /api/v1/risks with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0269 |
-| [ ] | T0271 | Add POST /api/v1/risks. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0270 |
-| [ ] | T0272 | Add GET /api/v1/risks/:id. | Missing and unauthorized records are handled without exposing private data. | T0271 |
-| [ ] | T0273 | Add PATCH /api/v1/risks/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0272 |
-| [ ] | T0274 | Add the typed risks query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0273 |
-| [ ] | T0275 | Build or port the risks list using its API hook. | The list shows real pagination, loading, empty and error states. | T0274 |
-| [ ] | T0276 | Build the risks creation form. | Valid submission persists and validation errors remain next to fields. | T0275 |
-| [ ] | T0277 | Build the risks detail view. | A direct URL loads the selected record and permitted fields. | T0276 |
-| [ ] | T0278 | Build the risks edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0277 |
+| [x] | T0271 | Add POST /api/v1/risks. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0270 |
+| [x] | T0272 | Add GET /api/v1/risks/:id. | Missing and unauthorized records are handled without exposing private data. | T0271 |
+| [x] | T0273 | Add PATCH /api/v1/risks/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0272 |
+| [x] | T0274 | Add the typed risks query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0273 |
+| [x] | T0275 | Build or port the risks list using its API hook. | The list shows real pagination, loading, empty and error states. | T0274 |
+| [x] | T0276 | Build the risks creation form. | Valid submission persists and validation errors remain next to fields. | T0275 |
+| [x] | T0277 | Build the risks detail view. | A direct URL loads the selected record and permitted fields. | T0276 |
+| [x] | T0278 | Build the risks edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0277 |
 
 ### 16. Asset inventory records
 
@@ -468,16 +468,16 @@ Roadmap reference: G05.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0279 | Add Asset DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0278 |
-| [ ] | T0280 | Add GET /api/v1/assets with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0279 |
-| [ ] | T0281 | Add POST /api/v1/assets. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0280 |
-| [ ] | T0282 | Add GET /api/v1/assets/:id. | Missing and unauthorized records are handled without exposing private data. | T0281 |
-| [ ] | T0283 | Add PATCH /api/v1/assets/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0282 |
-| [ ] | T0284 | Add the typed assets query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0283 |
-| [ ] | T0285 | Build or port the assets list using its API hook. | The list shows real pagination, loading, empty and error states. | T0284 |
-| [ ] | T0286 | Build the assets creation form. | Valid submission persists and validation errors remain next to fields. | T0285 |
-| [ ] | T0287 | Build the assets detail view. | A direct URL loads the selected record and permitted fields. | T0286 |
-| [ ] | T0288 | Build the assets edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0287 |
+| [x] | T0279 | Add Asset DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0278 |
+| [x] | T0280 | Add GET /api/v1/assets with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0279 |
+| [x] | T0281 | Add POST /api/v1/assets. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0280 |
+| [x] | T0282 | Add GET /api/v1/assets/:id. | Missing and unauthorized records are handled without exposing private data. | T0281 |
+| [x] | T0283 | Add PATCH /api/v1/assets/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0282 |
+| [x] | T0284 | Add the typed assets query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0283 |
+| [x] | T0285 | Build or port the assets list using its API hook. | The list shows real pagination, loading, empty and error states. | T0284 |
+| [x] | T0286 | Build the assets creation form. | Valid submission persists and validation errors remain next to fields. | T0285 |
+| [x] | T0287 | Build the assets detail view. | A direct URL loads the selected record and permitted fields. | T0286 |
+| [x] | T0288 | Build the assets edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0287 |
 
 ### 17. Vendor register records
 
@@ -485,16 +485,16 @@ Roadmap reference: G06–G09.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0289 | Add Vendor DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0288 |
-| [ ] | T0290 | Add GET /api/v1/vendors with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0289 |
-| [ ] | T0291 | Add POST /api/v1/vendors. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0290 |
-| [ ] | T0292 | Add GET /api/v1/vendors/:id. | Missing and unauthorized records are handled without exposing private data. | T0291 |
-| [ ] | T0293 | Add PATCH /api/v1/vendors/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0292 |
-| [ ] | T0294 | Add the typed vendors query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0293 |
-| [ ] | T0295 | Build or port the vendors list using its API hook. | The list shows real pagination, loading, empty and error states. | T0294 |
-| [ ] | T0296 | Build the vendors creation form. | Valid submission persists and validation errors remain next to fields. | T0295 |
-| [ ] | T0297 | Build the vendors detail view. | A direct URL loads the selected record and permitted fields. | T0296 |
-| [ ] | T0298 | Build the vendors edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0297 |
+| [x] | T0289 | Add Vendor DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0288 |
+| [x] | T0290 | Add GET /api/v1/vendors with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0289 |
+| [x] | T0291 | Add POST /api/v1/vendors. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0290 |
+| [x] | T0292 | Add GET /api/v1/vendors/:id. | Missing and unauthorized records are handled without exposing private data. | T0291 |
+| [x] | T0293 | Add PATCH /api/v1/vendors/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0292 |
+| [x] | T0294 | Add the typed vendors query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0293 |
+| [x] | T0295 | Build or port the vendors list using its API hook. | The list shows real pagination, loading, empty and error states. | T0294 |
+| [x] | T0296 | Build the vendors creation form. | Valid submission persists and validation errors remain next to fields. | T0295 |
+| [x] | T0297 | Build the vendors detail view. | A direct URL loads the selected record and permitted fields. | T0296 |
+| [x] | T0298 | Build the vendors edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0297 |
 
 ### 18. Finding records
 
@@ -502,16 +502,16 @@ Roadmap reference: F01–F02.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0299 | Add Finding DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0298 |
-| [ ] | T0300 | Add GET /api/v1/findings with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0299 |
-| [ ] | T0301 | Add POST /api/v1/findings. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0300 |
-| [ ] | T0302 | Add GET /api/v1/findings/:id. | Missing and unauthorized records are handled without exposing private data. | T0301 |
-| [ ] | T0303 | Add PATCH /api/v1/findings/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0302 |
-| [ ] | T0304 | Add the typed findings query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0303 |
-| [ ] | T0305 | Build or port the findings list using its API hook. | The list shows real pagination, loading, empty and error states. | T0304 |
-| [ ] | T0306 | Build the findings creation form. | Valid submission persists and validation errors remain next to fields. | T0305 |
-| [ ] | T0307 | Build the findings detail view. | A direct URL loads the selected record and permitted fields. | T0306 |
-| [ ] | T0308 | Build the findings edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0307 |
+| [x] | T0299 | Add Finding DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0298 |
+| [x] | T0300 | Add GET /api/v1/findings with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0299 |
+| [x] | T0301 | Add POST /api/v1/findings. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0300 |
+| [x] | T0302 | Add GET /api/v1/findings/:id. | Missing and unauthorized records are handled without exposing private data. | T0301 |
+| [x] | T0303 | Add PATCH /api/v1/findings/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0302 |
+| [x] | T0304 | Add the typed findings query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0303 |
+| [x] | T0305 | Build or port the findings list using its API hook. | The list shows real pagination, loading, empty and error states. | T0304 |
+| [x] | T0306 | Build the findings creation form. | Valid submission persists and validation errors remain next to fields. | T0305 |
+| [x] | T0307 | Build the findings detail view. | A direct URL loads the selected record and permitted fields. | T0306 |
+| [x] | T0308 | Build the findings edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0307 |
 
 ### 19. Task records
 
@@ -519,16 +519,16 @@ Roadmap reference: F03–F05.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0309 | Add Task DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0308 |
-| [ ] | T0310 | Add GET /api/v1/tasks with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0309 |
-| [ ] | T0311 | Add POST /api/v1/tasks. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0310 |
-| [ ] | T0312 | Add GET /api/v1/tasks/:id. | Missing and unauthorized records are handled without exposing private data. | T0311 |
-| [ ] | T0313 | Add PATCH /api/v1/tasks/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0312 |
-| [ ] | T0314 | Add the typed tasks query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0313 |
-| [ ] | T0315 | Build or port the tasks list using its API hook. | The list shows real pagination, loading, empty and error states. | T0314 |
-| [ ] | T0316 | Build the tasks creation form. | Valid submission persists and validation errors remain next to fields. | T0315 |
-| [ ] | T0317 | Build the tasks detail view. | A direct URL loads the selected record and permitted fields. | T0316 |
-| [ ] | T0318 | Build the tasks edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0317 |
+| [x] | T0309 | Add Task DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0308 |
+| [x] | T0310 | Add GET /api/v1/tasks with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0309 |
+| [x] | T0311 | Add POST /api/v1/tasks. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0310 |
+| [x] | T0312 | Add GET /api/v1/tasks/:id. | Missing and unauthorized records are handled without exposing private data. | T0311 |
+| [x] | T0313 | Add PATCH /api/v1/tasks/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0312 |
+| [x] | T0314 | Add the typed tasks query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0313 |
+| [x] | T0315 | Build or port the tasks list using its API hook. | The list shows real pagination, loading, empty and error states. | T0314 |
+| [x] | T0316 | Build the tasks creation form. | Valid submission persists and validation errors remain next to fields. | T0315 |
+| [x] | T0317 | Build the tasks detail view. | A direct URL loads the selected record and permitted fields. | T0316 |
+| [x] | T0318 | Build the tasks edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0317 |
 
 ### 20. Policy metadata records
 
@@ -536,16 +536,16 @@ Roadmap reference: G01–G04.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0319 | Add Policy DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0318 |
-| [ ] | T0320 | Add GET /api/v1/policies with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0319 |
-| [ ] | T0321 | Add POST /api/v1/policies. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0320 |
-| [ ] | T0322 | Add GET /api/v1/policies/:id. | Missing and unauthorized records are handled without exposing private data. | T0321 |
-| [ ] | T0323 | Add PATCH /api/v1/policies/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0322 |
-| [ ] | T0324 | Add the typed policies query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0323 |
-| [ ] | T0325 | Build or port the policies list using its API hook. | The list shows real pagination, loading, empty and error states. | T0324 |
-| [ ] | T0326 | Build the policies creation form. | Valid submission persists and validation errors remain next to fields. | T0325 |
-| [ ] | T0327 | Build the policies detail view. | A direct URL loads the selected record and permitted fields. | T0326 |
-| [ ] | T0328 | Build the policies edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0327 |
+| [x] | T0319 | Add Policy DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0318 |
+| [x] | T0320 | Add GET /api/v1/policies with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0319 |
+| [x] | T0321 | Add POST /api/v1/policies. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0320 |
+| [x] | T0322 | Add GET /api/v1/policies/:id. | Missing and unauthorized records are handled without exposing private data. | T0321 |
+| [x] | T0323 | Add PATCH /api/v1/policies/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0322 |
+| [x] | T0324 | Add the typed policies query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0323 |
+| [x] | T0325 | Build or port the policies list using its API hook. | The list shows real pagination, loading, empty and error states. | T0324 |
+| [x] | T0326 | Build the policies creation form. | Valid submission persists and validation errors remain next to fields. | T0325 |
+| [x] | T0327 | Build the policies detail view. | A direct URL loads the selected record and permitted fields. | T0326 |
+| [x] | T0328 | Build the policies edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0327 |
 
 ### 21. Audit plan records
 
@@ -553,16 +553,16 @@ Roadmap reference: H01–H04.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0329 | Add Audit DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0328 |
-| [ ] | T0330 | Add GET /api/v1/audits with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0329 |
-| [ ] | T0331 | Add POST /api/v1/audits. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0330 |
-| [ ] | T0332 | Add GET /api/v1/audits/:id. | Missing and unauthorized records are handled without exposing private data. | T0331 |
-| [ ] | T0333 | Add PATCH /api/v1/audits/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0332 |
-| [ ] | T0334 | Add the typed audits query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0333 |
-| [ ] | T0335 | Build or port the audits list using its API hook. | The list shows real pagination, loading, empty and error states. | T0334 |
-| [ ] | T0336 | Build the audits creation form. | Valid submission persists and validation errors remain next to fields. | T0335 |
-| [ ] | T0337 | Build the audits detail view. | A direct URL loads the selected record and permitted fields. | T0336 |
-| [ ] | T0338 | Build the audits edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0337 |
+| [x] | T0329 | Add Audit DTO validation. | Invalid enums, missing required fields and disallowed fields fail before persistence. | T0328 |
+| [x] | T0330 | Add GET /api/v1/audits with pagination. | Authorized results are scoped and bounded; tests cover an unauthorized caller. | T0329 |
+| [x] | T0331 | Add POST /api/v1/audits. | A valid record persists; invalid ownership/tenant links fail; the creation is audited. | T0330 |
+| [x] | T0332 | Add GET /api/v1/audits/:id. | Missing and unauthorized records are handled without exposing private data. | T0331 |
+| [x] | T0333 | Add PATCH /api/v1/audits/:id for ordinary editable fields. | Invalid/stale edits fail; lifecycle/approval fields cannot be changed through this general endpoint. | T0332 |
+| [x] | T0334 | Add the typed audits query/mutation hooks. | Create/edit invalidates the affected list/detail cache and preserves server errors. | T0333 |
+| [x] | T0335 | Build or port the audits list using its API hook. | The list shows real pagination, loading, empty and error states. | T0334 |
+| [x] | T0336 | Build the audits creation form. | Valid submission persists and validation errors remain next to fields. | T0335 |
+| [x] | T0337 | Build the audits detail view. | A direct URL loads the selected record and permitted fields. | T0336 |
+| [x] | T0338 | Build the audits edit form. | Reload shows the saved values; concurrency conflicts are visible. | T0337 |
 
 ### 22. Roles, settings and scope editors
 
@@ -570,22 +570,22 @@ Roadmap reference: B08–B12.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0339 | Add organization-role list endpoint. | Only roles assignable in the current organization appear. | T0338 |
-| [ ] | T0340 | Add custom-role create endpoint. | Permission selections are limited by the creator's allowed delegation. | T0339 |
-| [ ] | T0341 | Add custom-role permission-update endpoint. | Privilege escalation and editing protected platform roles fail. | T0340 |
-| [ ] | T0342 | Build custom-role creation form. | It submits a role name and permitted permission selections. | T0341 |
-| [ ] | T0343 | Build role-permission editor. | Saved grants change authorization without relying on hidden UI controls. | T0342 |
-| [ ] | T0344 | Add membership-role assignment endpoint. | Assignments reference active membership and tenant-compatible roles. | T0343 |
-| [ ] | T0345 | Build user-role assignment action. | The selected role persists and disallowed grants show an error. | T0344 |
-| [ ] | T0346 | Port the user directory to a typed tenant API. | Invited and active users have real statuses rather than a hardcoded profile. | T0345 |
-| [ ] | T0347 | Add organization profile logo attachment action. | Only an authorized validated image can become the logo. | T0346 |
-| [ ] | T0348 | Add organization settings model and read endpoint. | Date/currency/retention/branding/security/notification settings have explicit defaults. | T0347 |
-| [ ] | T0349 | Add organization settings update endpoint. | Unknown fields fail and policy changes are audited. | T0348 |
-| [ ] | T0350 | Connect the existing settings form to saved settings. | Reload preserves updates; no switch falsely claims to enforce an absent feature. | T0349 |
-| [ ] | T0351 | Build program-scope selector. | It lists only tenant-compatible scope records. | T0350 |
-| [ ] | T0352 | Build platform organization/subscription table. | Platform users see administration fields without customer evidence. | T0351 |
-| [ ] | T0353 | Build support-access request form. | Submitting creates a pending request with selected scope and expiry. | T0352 |
-| [ ] | T0354 | Build customer support-access approval UI. | Approve/reject calls the real workflow and displays its effective expiration. | T0353 |
+| [x] | T0339 | Add organization-role list endpoint. | Only roles assignable in the current organization appear. | T0338 |
+| [x] | T0340 | Add custom-role create endpoint. | Permission selections are limited by the creator's allowed delegation. | T0339 |
+| [x] | T0341 | Add custom-role permission-update endpoint. | Privilege escalation and editing protected platform roles fail. | T0340 |
+| [x] | T0342 | Build custom-role creation form. | It submits a role name and permitted permission selections. | T0341 |
+| [x] | T0343 | Build role-permission editor. | Saved grants change authorization without relying on hidden UI controls. | T0342 |
+| [x] | T0344 | Add membership-role assignment endpoint. | Assignments reference active membership and tenant-compatible roles. | T0343 |
+| [x] | T0345 | Build user-role assignment action. | The selected role persists and disallowed grants show an error. | T0344 |
+| [x] | T0346 | Port the user directory to a typed tenant API. | Invited and active users have real statuses rather than a hardcoded profile. | T0345 |
+| [x] | T0347 | Add organization profile logo attachment action. | Only an authorized validated image can become the logo. | T0346 |
+| [x] | T0348 | Add organization settings model and read endpoint. | Date/currency/retention/branding/security/notification settings have explicit defaults. | T0347 |
+| [x] | T0349 | Add organization settings update endpoint. | Unknown fields fail and policy changes are audited. | T0348 |
+| [x] | T0350 | Connect the existing settings form to saved settings. | Reload preserves updates; no switch falsely claims to enforce an absent feature. | T0349 |
+| [x] | T0351 | Build program-scope selector. | It lists only tenant-compatible scope records. | T0350 |
+| [x] | T0352 | Build platform organization/subscription table. | Platform users see administration fields without customer evidence. | T0351 |
+| [x] | T0353 | Build support-access request form. | Submitting creates a pending request with selected scope and expiry. | T0352 |
+| [x] | T0354 | Build customer support-access approval UI. | Approve/reject calls the real workflow and displays its effective expiration. | T0353 |
 
 ### 23. Program activation and stage actions
 

@@ -85,6 +85,7 @@ export const navSections: NavSection[] = [
       { label: 'Locations', href: '/locations', icon: MapPin },
       { label: 'Users', href: '/users', icon: Users },
       { label: 'Settings', href: '/settings', icon: Settings },
+      { label: 'Roles', href: '/settings/roles', icon: ShieldCheck },
       { label: 'Workflows', href: '/settings/workflows', icon: GitPullRequest },
       { label: 'Approvals', href: '/approvals', icon: Inbox },
     ],
