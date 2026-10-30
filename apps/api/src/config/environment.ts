@@ -21,7 +21,8 @@ export function validateEnvironment(env: NodeJS.ProcessEnv) {
   if (!Number.isInteger(inactivityTimeoutSeconds) || inactivityTimeoutSeconds < 300 || inactivityTimeoutSeconds > 86400) throw new ConfigurationError(['SESSION_INACTIVITY_SECONDS must be an integer from 300 to 86400']);
   const smtpPort = Number(env.SMTP_PORT ?? '1025');
   if (!Number.isInteger(smtpPort) || smtpPort < 1 || smtpPort > 65535) throw new ConfigurationError(['SMTP_PORT must be a valid port']);
-  return Object.freeze({ ...connections, port, webOrigin, auth: Object.freeze({ ...auth, inactivityTimeoutSeconds, lockoutAttempts: 5, lockoutSeconds: 900 }), smtp: Object.freeze({ host: env.SMTP_HOST ?? '127.0.0.1', port: smtpPort, from: env.SMTP_FROM ?? 'ComplyOS <no-reply@complyos.local>' }) });
+  const fileMaxBytes=Number(env.FILE_MAX_BYTES??'10485760'),clamPort=Number(env.CLAMAV_PORT??'3310');if(!Number.isInteger(fileMaxBytes)||fileMaxBytes<1||fileMaxBytes>52428800)throw new ConfigurationError(['FILE_MAX_BYTES must be between 1 and 52428800']);
+  return Object.freeze({ ...connections, port, webOrigin, auth: Object.freeze({ ...auth, inactivityTimeoutSeconds, lockoutAttempts: 5, lockoutSeconds: 900 }), smtp: Object.freeze({ host: env.SMTP_HOST ?? '127.0.0.1', port: smtpPort, from: env.SMTP_FROM ?? 'ComplyOS <no-reply@complyos.local>' }),files:Object.freeze({root:env.FILE_STORAGE_ROOT??'.data/uploads',encryptionSecret:env.FILE_ENCRYPTION_SECRET??accessSecret,grantSecret:env.FILE_GRANT_SECRET??accessSecret,maxBytes:fileMaxBytes,clamHost:env.CLAMAV_HOST??'127.0.0.1',clamPort}) });
 }
 export type ApiEnvironment = ReturnType<typeof validateEnvironment>;
 export function loadEnvironment(overrides: NodeJS.ProcessEnv = process.env, file = new URL('../../.env', import.meta.url)) {

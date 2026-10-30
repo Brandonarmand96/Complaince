@@ -5,6 +5,7 @@ import { checkRedis } from '@complyos/runtime/redis';
 import { jobStore, makeQueue, makeWorker } from '@complyos/runtime/jobs';
 import { deliverOutboxBatch, validateDomainEvent } from '@complyos/runtime/governance';
 import { controlWorkflowStore } from '@complyos/runtime/control-workflows';
+import { processFileScans } from '@complyos/runtime/files';
 import { loadEnvironment } from './config.js';
 const logger = createLogger();
 async function main() {
@@ -39,6 +40,7 @@ async function main() {
   const scheduleRetests = async () => { try { const requests = await workflows.scheduleRetests(); if (requests.length) logger.info({ count: requests.length }, 'Periodic control retest requests created.'); } catch { logger.error('Could not schedule periodic control retests. Will retry.'); } };
   await scheduleRetests();
   const retestTimer = setInterval(() => { void scheduleRetests(); }, 60 * 60 * 1000);
+  const scanFiles=async()=>{try{await processFileScans(db,env.files)}catch{logger.error('Could not process quarantined file scans. Will retry.')}};await scanFiles();const fileScanTimer=setInterval(()=>{void scanFiles()},10000);
   logger.info('ComplyOS worker started.');
   let closing = false;
   const shutdown = async () => {
@@ -47,6 +49,7 @@ async function main() {
     clearInterval(timer);
     clearInterval(outboxTimer);
     clearInterval(retestTimer);
+    clearInterval(fileScanTimer);
     const deadline = setTimeout(() => process.exit(1), 10000);
     deadline.unref();
     await consumer.close();

@@ -24,13 +24,14 @@ import type { taskStore } from '@complyos/runtime/tasks';
 import { PolicyDomainConflict, type policyStore } from '@complyos/runtime/policies';
 import { AuditDomainConflict, type auditStore } from '@complyos/runtime/audits';
 import { AdministrationConflict, type administrationStore } from '@complyos/runtime/administration';
+import { FileSecurityError, type fileStore } from '@complyos/runtime/files';
 import { DomainConflict, type controlWorkflowStore } from '@complyos/runtime/control-workflows';
 import { RequirementPackError, type requirementPackStore } from '@complyos/runtime/requirement-packs';
 import { authenticateAccessToken, createRateLimiter, HttpError, errorHandler, parseJobQuery, requestLogging, validateBody } from './http.js';
 import { BusinessUnitCreateDto, BusinessUnitPatchDto, DepartmentCreateDto, DepartmentPatchDto, LocationCreateDto, LocationPatchDto, FrameworkCreateDto, FrameworkPatchDto, CommentCreateDto, CommentEditDto, DisableOrganizationDto, EmailVerificationConsumeDto, EmailVerificationRequestDto, HealthJobDto, InvitationAcceptDto, InvitationAcceptNewDto, InvitationCreateDto, LoginDto, MfaChallengeDto, MfaCodeDto, MfaResetRequestDto, OrganizationCreateDto, OrganizationPatchDto, PasswordResetCompleteDto, PasswordResetRequestDto, ReactionDto, RefreshDto, RegisterDto, SubscriptionDto, SwitchOrganizationDto, UserStatusDto, WorkflowDefinitionDto, WorkflowTransitionDto } from './dto.js';
 import { openapi } from './openapi.js';
 import { UnifiedControlCreateDto, UnifiedControlPatchDto } from './dto.js';
-import { FrameworkVersionCreateDto, FrameworkRequirementDto, FrameworkPublishDto, MigrationPreviewDto, ControlOwnerDto, ImplementationNotesDto, ReviewDecisionDto, MappingSaveDto, MappingDecisionDto, RequirementPackImportDto, MigrationApplyDto, OperationalStateDto, ComplianceProgramCreateDto, ComplianceProgramPatchDto, RiskCreateDto, RiskPatchDto, AssetCreateDto, AssetPatchDto, VendorCreateDto, VendorPatchDto, FindingCreateDto, FindingPatchDto, TaskCreateDto, TaskPatchDto, PolicyCreateDto, PolicyPatchDto, AuditCreateDto, AuditPatchDto, RoleCreateDto, RolePermissionsDto, MembershipRoleDto, OrganizationSettingsDto, OrganizationLogoDto, SupportRequestDto, SupportDecisionDto } from './dto.js';
+import { FrameworkVersionCreateDto, FrameworkRequirementDto, FrameworkPublishDto, MigrationPreviewDto, ControlOwnerDto, ImplementationNotesDto, ReviewDecisionDto, MappingSaveDto, MappingDecisionDto, RequirementPackImportDto, MigrationApplyDto, OperationalStateDto, ComplianceProgramCreateDto, ComplianceProgramPatchDto, RiskCreateDto, RiskPatchDto, AssetCreateDto, AssetPatchDto, VendorCreateDto, VendorPatchDto, FindingCreateDto, FindingPatchDto, TaskCreateDto, TaskPatchDto, PolicyCreateDto, PolicyPatchDto, AuditCreateDto, AuditPatchDto, RoleCreateDto, RolePermissionsDto, MembershipRoleDto, OrganizationSettingsDto, OrganizationLogoDto, SupportRequestDto, SupportDecisionDto, ProgramStageDto, FileUploadDto, FileGrantDto } from './dto.js';
 export interface AppDependencies {
   checkDatabase: () => Promise<unknown>;
   checkRedis: () => Promise<unknown>;
@@ -84,6 +85,7 @@ export interface AppDependencies {
   policies?: ReturnType<typeof policyStore>;
   audits?: ReturnType<typeof auditStore>;
   administration?: ReturnType<typeof administrationStore>;
+  files?: ReturnType<typeof fileStore>;
   controlWorkflows?: ReturnType<typeof controlWorkflowStore>;
   requirementPacks?: ReturnType<typeof requirementPackStore>;
   logger?: ReturnType<typeof createLogger>;
@@ -278,6 +280,8 @@ export function createApp(deps: AppDependencies) {
   app.get('/api/v1/programs/options',requireAuth,async(_request,response)=>{const a=identity(response);try{response.json(await programs().options(a.userId,a.sessionId))}catch(e){programError(e)}});
   app.get('/api/v1/programs/:id',requireAuth,async(request,response)=>{const id=String(request.params.id);if(!/^[0-9a-f-]{36}$/i.test(id))throw new HttpError(400,'VALIDATION_ERROR','Program ID is invalid.');const a=identity(response),record=await programs().detail(a.userId,a.sessionId,id);if(!record)throw new HttpError(404,'PROGRAM_NOT_FOUND','Compliance program not found.');response.json(record)});
   app.patch('/api/v1/programs/:id',requireAuth,validateBody(ComplianceProgramPatchDto),async(request,response)=>{const a=identity(response);try{response.json(await programs().update(a.userId,a.sessionId,String(request.params.id),response.locals.body as ComplianceProgramPatchDto,response.locals.requestId))}catch(e){programError(e)}});
+  app.post('/api/v1/programs/activate',requireAuth,validateBody(ComplianceProgramCreateDto),async(request,response)=>{const a=identity(response),key=String(request.header('idempotency-key')??'');if(key.length<8||key.length>200)throw new HttpError(400,'VALIDATION_ERROR','A valid Idempotency-Key header is required.');try{response.status(201).json(await programs().activate(a.userId,a.sessionId,response.locals.body as ComplianceProgramCreateDto,key,response.locals.requestId))}catch(e){programError(e)}});
+  app.post('/api/v1/programs/:id/stage',requireAuth,validateBody(ProgramStageDto),async(request,response)=>{const a=identity(response),body=response.locals.body as ProgramStageDto;try{response.json(await programs().transitionStage(a.userId,a.sessionId,String(request.params.id),body.stage,body.version,response.locals.requestId))}catch(e){programError(e)}});
   const risks=()=>{if(!deps.risks)throw new HttpError(503,'RISKS_UNAVAILABLE','Risk register services are unavailable.');return deps.risks;};
   const recordError=(e:unknown):never=>{if(e instanceof TenantAccessDenied)throw new HttpError(403,'FORBIDDEN','The active organization or linked record does not permit this action.');if(e instanceof ConcurrencyConflict)throw new HttpError(409,'CONCURRENCY_CONFLICT',e.message);throw e;};
   app.get('/api/v1/risks',requireAuth,async(request,response)=>{const a=identity(response);try{response.json(await risks().list(a.userId,a.sessionId,pageInput(request)))}catch(e){recordError(e)}});
@@ -335,6 +339,13 @@ export function createApp(deps: AppDependencies) {
   app.post('/api/v1/platform/support-access',requireAuth,validateBody(SupportRequestDto),async(_q,r)=>{const a=identity(r);try{r.status(201).json(await admin().createSupport(a.userId,r.locals.body as SupportRequestDto))}catch(e){adminError(e)}});
   app.get('/api/v1/admin/support-access',requireAuth,async(_q,r)=>{const a=identity(r);try{r.json(await admin().supportRequests(a.userId,a.sessionId))}catch(e){adminError(e)}});
   app.post('/api/v1/admin/support-access/:id/decision',requireAuth,validateBody(SupportDecisionDto),async(q,r)=>{const a=identity(r);try{r.json(await admin().resolveSupport(a.userId,a.sessionId,String(q.params.id),(r.locals.body as SupportDecisionDto).status,r.locals.requestId))}catch(e){adminError(e)}});
+  const files=()=>{if(!deps.files)throw new HttpError(503,'FILES_UNAVAILABLE','Secure file services are unavailable.');return deps.files;},fileError=(e:unknown):never=>{if(e instanceof FileSecurityError)throw new HttpError(400,'FILE_REJECTED',e.message);return recordError(e)};
+  app.post('/files/upload',requireAuth,validateBody(FileUploadDto),async(_q,r)=>{const a=identity(r);try{r.status(201).json(await files().upload(a.userId,a.sessionId,r.locals.body as FileUploadDto,r.locals.requestId))}catch(e){fileError(e)}});
+  app.post('/files/grants',requireAuth,validateBody(FileGrantDto),async(_q,r)=>{const a=identity(r);try{r.status(201).json(await files().grant(a.userId,a.sessionId,(r.locals.body as FileGrantDto).fileId))}catch(e){fileError(e)}});
+  app.get('/files/download',requireAuth,async(q,r)=>{const a=identity(r);try{const x=await files().download(a.userId,a.sessionId,String(q.query.token??''),r.locals.requestId);r.setHeader('content-type',x.mimeType);r.setHeader('content-disposition',`attachment; filename*=UTF-8''${encodeURIComponent(x.filename)}`);r.send(x.data)}catch(e){fileError(e)}});
+  app.get('/files/:id/preview',requireAuth,async(q,r)=>{const a=identity(r);try{const x=await files().preview(a.userId,a.sessionId,String(q.params.id));r.type(x.mimeType).send(x.data)}catch(e){fileError(e)}});
+  app.get('/files/retention/eligible',requireAuth,async(_q,r)=>{const a=identity(r);try{r.json(await files().retentionEligible(a.userId,a.sessionId))}catch(e){fileError(e)}});
+  app.post('/files/retention/purge',requireAuth,async(_q,r)=>{const a=identity(r);try{r.json(await files().purge(a.userId,a.sessionId,r.locals.requestId))}catch(e){fileError(e)}});
   const workflows=()=>{if(!deps.controlWorkflows)throw new HttpError(503,'CONTROL_WORKFLOWS_UNAVAILABLE','Control workflow services are unavailable.');return deps.controlWorkflows;};
   const workflowError=(e:unknown):never=>{if(e instanceof TenantAccessDenied)throw new HttpError(403,'FORBIDDEN','The active organization or required role does not permit this action.');if(e instanceof ConcurrencyConflict)throw new HttpError(409,'CONCURRENCY_CONFLICT',e.message);if(e instanceof DomainConflict)throw new HttpError(409,'INVALID_STATE',e.message);throw e;};
   app.get('/api/v1/frameworks/:id/versions',requireAuth,async(request,response)=>{const a=identity(response);try{response.json(await workflows().versions(a.userId,a.sessionId,String(request.params.id)))}catch(e){workflowError(e)}});

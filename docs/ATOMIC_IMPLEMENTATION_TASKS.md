@@ -593,11 +593,11 @@ Roadmap reference: D07–D08.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0355 | Add framework-activation transaction. | It creates one program's required links without duplicating shared implementations. | T0354 |
-| [ ] | T0356 | Add activation idempotency protection. | Retrying one activation request creates no duplicate program/control links. | T0355 |
-| [ ] | T0357 | Build framework activation dialog. | It selects edition, scope and owner and calls the activation API. | T0356 |
-| [ ] | T0358 | Add program-stage transition action. | Only the allowed next transitions succeed. | T0357 |
-| [ ] | T0359 | Connect the program-stage tracker to actual transitions. | A stage change is persisted and audited. | T0358 |
+| [x] | T0355 | Add framework-activation transaction. | It creates one program's required links without duplicating shared implementations. | T0354 |
+| [x] | T0356 | Add activation idempotency protection. | Retrying one activation request creates no duplicate program/control links. | T0355 |
+| [x] | T0357 | Build framework activation dialog. | It selects edition, scope and owner and calls the activation API. | T0356 |
+| [x] | T0358 | Add program-stage transition action. | Only the allowed next transitions succeed. | T0357 |
+| [x] | T0359 | Connect the program-stage tracker to actual transitions. | A stage change is persisted and audited. | T0358 |
 
 ### 24. Secure file upload and download
 
@@ -605,26 +605,26 @@ Roadmap reference: E01–E03.
 
 | Done | ID | Implement this one change | Completion check | After |
 | --- | --- | --- | --- | --- |
-| [ ] | T0360 | Add File model with hash, MIME, size, storage key, encryption version and scan state. | Original filename is metadata rather than a disk path. | T0359 |
-| [ ] | T0361 | Add safe storage-key generator and root containment check. | Traversal and absolute-path input cannot escape the configured directory. | T0360 |
-| [ ] | T0362 | Add upload-size and extension validation. | Oversized and forbidden files fail before durable storage. | T0361 |
-| [ ] | T0363 | Add MIME/signature validation. | A renamed executable fails the accepted-type check. | T0362 |
-| [ ] | T0364 | Add streaming SHA-256 hash computation. | The persisted hash matches the uploaded bytes. | T0363 |
-| [ ] | T0365 | Add duplicate-file lookup scoped to the tenant. | The response cannot reveal that another tenant owns a matching file. | T0364 |
-| [ ] | T0366 | Add encrypted local-file write adapter. | Disk bytes differ from uploaded plaintext and can be decrypted correctly. | T0365 |
-| [ ] | T0367 | Add POST /files/upload. | Validated files enter quarantine with pending scan status. | T0366 |
-| [ ] | T0368 | Add malware-scan job payload and enqueue action. | Every completed upload schedules one scan attempt. | T0367 |
-| [ ] | T0369 | Add scanner adapter for a real local scanning service. | Clean, infected and scanner-error outcomes are distinguished. | T0368 |
-| [ ] | T0370 | Add scan-result persistence. | Only a confirmed clean result clears quarantine. | T0369 |
-| [ ] | T0371 | Add scan-error retry policy. | Repeated scanner errors remain quarantined after retry exhaustion. | T0370 |
-| [ ] | T0372 | Add file-download authorization helper. | Tenant, record access, current membership and scan state are checked. | T0371 |
-| [ ] | T0373 | Add short-lived signed download grant creation. | The token is bound to the file/version and intended access context. | T0372 |
-| [ ] | T0374 | Add download endpoint consuming a grant. | Expired, revoked, tampered and cross-tenant grants fail. | T0373 |
-| [ ] | T0375 | Add evidence/file download audit event. | The actor, file version and request context are recorded. | T0374 |
-| [ ] | T0376 | Add preview-format allowlist. | Unsupported formats are offered only through allowed download behavior. | T0375 |
-| [ ] | T0377 | Add watermark rendering for supported PDF/image previews. | The preview includes the configured user/organization watermark. | T0376 |
-| [ ] | T0378 | Add retention eligibility calculation. | Linked, held or unexpired files are excluded according to the retention policy. | T0377 |
-| [ ] | T0379 | Add authorized archive/purge job for eligible local files. | Deletion is logged and cannot remove files outside the storage root. | T0378 |
+| [x] | T0360 | Add File model with hash, MIME, size, storage key, encryption version and scan state. | Original filename is metadata rather than a disk path. | T0359 |
+| [x] | T0361 | Add safe storage-key generator and root containment check. | Traversal and absolute-path input cannot escape the configured directory. | T0360 |
+| [x] | T0362 | Add upload-size and extension validation. | Oversized and forbidden files fail before durable storage. | T0361 |
+| [x] | T0363 | Add MIME/signature validation. | A renamed executable fails the accepted-type check. | T0362 |
+| [x] | T0364 | Add streaming SHA-256 hash computation. | The persisted hash matches the uploaded bytes. | T0363 |
+| [x] | T0365 | Add duplicate-file lookup scoped to the tenant. | The response cannot reveal that another tenant owns a matching file. | T0364 |
+| [x] | T0366 | Add encrypted local-file write adapter. | Disk bytes differ from uploaded plaintext and can be decrypted correctly. | T0365 |
+| [x] | T0367 | Add POST /files/upload. | Validated files enter quarantine with pending scan status. | T0366 |
+| [x] | T0368 | Add malware-scan job payload and enqueue action. | Every completed upload schedules one scan attempt. | T0367 |
+| [x] | T0369 | Add scanner adapter for a real local scanning service. | Clean, infected and scanner-error outcomes are distinguished. | T0368 |
+| [x] | T0370 | Add scan-result persistence. | Only a confirmed clean result clears quarantine. | T0369 |
+| [x] | T0371 | Add scan-error retry policy. | Repeated scanner errors remain quarantined after retry exhaustion. | T0370 |
+| [x] | T0372 | Add file-download authorization helper. | Tenant, record access, current membership and scan state are checked. | T0371 |
+| [x] | T0373 | Add short-lived signed download grant creation. | The token is bound to the file/version and intended access context. | T0372 |
+| [x] | T0374 | Add download endpoint consuming a grant. | Expired, revoked, tampered and cross-tenant grants fail. | T0373 |
+| [x] | T0375 | Add evidence/file download audit event. | The actor, file version and request context are recorded. | T0374 |
+| [x] | T0376 | Add preview-format allowlist. | Unsupported formats are offered only through allowed download behavior. | T0375 |
+| [x] | T0377 | Add watermark rendering for supported PDF/image previews. | The preview includes the configured user/organization watermark. | T0376 |
+| [x] | T0378 | Add retention eligibility calculation. | Linked, held or unexpired files are excluded according to the retention policy. | T0377 |
+| [x] | T0379 | Add authorized archive/purge job for eligible local files. | Deletion is logged and cannot remove files outside the storage root. | T0378 |
 
 ### 25. Evidence records and review
 

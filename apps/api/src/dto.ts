@@ -373,3 +373,6 @@ export class OrganizationSettingsDto {@IsInt() @Min(1) version!:number;@IsIn(['Y
 export class OrganizationLogoDto {@IsString() @Length(30,700000) logoDataUrl!:string}
 export class SupportRequestDto {@IsUUID('4') organizationId!:string;@IsArray() @ArrayUnique() @ArrayMaxSize(50) @IsString({each:true}) resources!:string[];@IsString() @Length(10,2000) reason!:string;@IsDateString() expiresAt!:string}
 export class SupportDecisionDto {@IsIn(['APPROVED','REJECTED']) status!:'APPROVED'|'REJECTED'}
+export class ProgramStageDto {@IsIn(['READINESS','ASSESSMENT','REMEDIATION','COMPLETE']) stage!:string;@IsInt() @Min(1) version!:number}
+export class FileUploadDto {@IsString() @Length(1,255) filename!:string;@IsIn(['application/pdf','image/png','image/jpeg','image/webp','text/plain','text/csv']) mimeType!:string;@IsString() @Length(1,70000000) base64!:string}
+export class FileGrantDto {@IsUUID('4') fileId!:string}
